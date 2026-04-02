@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Vendas | 40+ Ativa</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root {
+  --bg: #000000;
+  --card: #0a0a0a;
+  --card-hover: #111111;
+  --border: #222222;
+  --border-hover: #2a2a2a;
+  --text: #e8e8e8;
+  --text-muted: #999999;
+  --text-dim: #666666;
+  --brand: #ec2ab5;
+  --brand-soft: rgba(236,42,181,.35);
+  --brand-mid: rgba(236,42,181,.25);
+  --green: #77dd77;
+  --green-bg: rgba(119,221,119,.08);
+  --red: #ff6b6b;
+  --red-bg: rgba(255,107,107,.08);
+  --cyan: #00d4ff;
+  --orange: #ffb347;
+  --white: #ffffff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height:100vh; font-variant-numeric: tabular-nums; }
+.container { max-width: 1500px; margin: 0 auto; padding: 20px 24px; }
+
+.header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.header h1 { font-size:1.4rem; font-weight:700; color:var(--white); letter-spacing:-.02em; }
+.header h1 span { color:var(--brand); }
+.header .subtitle { color:var(--text-muted); font-size:.78rem; margin-top:2px; }
+
+.filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.filter-group { display:flex; align-items:center; gap:4px; }
+.filter-group label { font-size:.68rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; margin-right:2px; }
+.filter-select { padding:5px 10px; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:4px; font-size:.75rem; cursor:pointer; outline:none; }
+.filter-select:focus { border-color:var(--brand); }
+.filter-select option { background:#111; }
+.filter-divider { width:1px; height:20px; background:var(--border); margin:0 4px; }
+
+.kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:20px; }
+.kpi-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 16px; transition:all .25s; }
+.kpi-card:hover { border-color:var(--border-hover); box-shadow: 0 0 20px rgba(236,42,181,.15); }
+.kpi-card .label { font-size:.62rem; text-transform:uppercase; letter-spacing:.8px; color:var(--text-dim); margin-bottom:6px; }
+.kpi-card .value { font-size:1.3rem; font-weight:700; color:var(--white); margin-bottom:2px; }
+.kpi-card .sub { font-size:.68rem; color:var(--text-muted); }
+.kpi-card.brand .value { color:var(--brand); }
+.kpi-card.green .value { color:var(--green); }
+.kpi-card.red .value { color:var(--red); }
+.kpi-card.cyan .value { color:var(--cyan); }
+
+.section-title { font-size:.9rem; font-weight:600; color:var(--white); margin:24px 0 12px; padding-left:10px; border-left:3px solid var(--brand); }
+
+.panel { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; }
+.panel-title { font-size:.78rem; font-weight:600; color:var(--text); margin-bottom:12px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+.grid-2-1 { display:grid; grid-template-columns:2fr 1fr; gap:12px; margin-bottom:12px; }
+.grid-1-2 { display:grid; grid-template-columns:1fr 2fr; gap:12px; margin-bottom:12px; }
+
+table { width:100%; border-collapse:collapse; font-size:.75rem; }
+th { text-align:left; padding:8px 10px; color:var(--text-dim); font-weight:500; font-size:.65rem; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border); }
+td { padding:7px 10px; border-bottom:1px solid rgba(255,255,255,.03); color:var(--text); }
+tr:hover td { background:rgba(255,255,255,.02); }
+td.num { text-align:right; font-variant-numeric:tabular-nums; }
+th.num { text-align:right; }
+.brand-text { color:var(--brand); font-weight:600; }
+.green-text { color:var(--green); }
+.red-text { color:var(--red); }
+.cyan-text { color:var(--cyan); }
+.orange-text { color:var(--orange); }
+.muted { color:var(--text-muted); }
+.bold { font-weight:600; color:var(--white); }
+tr.total-row td { border-top:1px solid var(--border); font-weight:600; color:var(--white); }
+
+.chart-container { position:relative; width:100%; }
+.chart-sm { height:200px; }
+.chart-md { height:260px; }
+.chart-lg { height:300px; }
+
+.footer { text-align:center; color:var(--text-dim); font-size:.65rem; padding:20px 0 10px; margin-top:20px; border-top:1px solid var(--border); }
+
+@media(max-width:1200px) { .kpi-row { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:900px) { .grid-2,.grid-3,.grid-2-1,.grid-1-2 { grid-template-columns:1fr; } }
+@media(max-width:600px) { .kpi-row { grid-template-columns:1fr 1fr; } }
+
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>Dashboard de <span>Vendas</span></h1>
+    <div class="subtitle">40+ Ativa | Dados Eduzz | Atualizado: Abril 2026</div>
+  </div>
+  <div class="filters" id="filters">
+    <div class="filter-group">
+      <label>Ano</label>
+      <select class="filter-select" id="fAno"><option value="all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Semestre</label>
+      <select class="filter-select" id="fSem"><option value="all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Trimestre</label>
+      <select class="filter-select" id="fTri"><option value="all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Mes</label>
+      <select class="filter-select" id="fMes"><option value="all">Todos</option></select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <label>Funil</label>
+      <select class="filter-select" id="fFunil"><option value="all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>V.D.</label>
+      <select class="filter-select" id="fVD">
+        <option value="all">Todos</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="N/A">N/A</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="kpi-row" id="kpiRow"></div>
+
+<!-- SECTION 1: Faturamento -->
+<div class="section-title">Faturamento</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Faturamento Mensal (Bruto vs Liquido)</div><div class="chart-container chart-md"><canvas id="chartFat"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Reembolsos por Mes (com Taxa %)</div><div class="chart-container chart-md"><canvas id="chartReemb"></canvas></div></div>
+</div>
+
+<!-- SECTION 2: Funil de Vendas -->
+<div class="section-title">Funil de Vendas</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Performance por Funil</div><table id="tblFunil"></table></div>
+  <div class="panel"><div class="panel-title">Distribuicao por Funil</div><div class="chart-container chart-md"><canvas id="chartFunil"></canvas></div></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">VD1 vs VD2 - Venda Direta por Mes</div><div class="chart-container chart-md"><canvas id="chartVDMes"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Faturamento por Funil (mensal - empilhado)</div><div class="chart-container chart-md"><canvas id="chartFunilMes"></canvas></div></div>
+</div>
+
+<!-- SECTION 3: Produtos & Ticket Medio -->
+<div class="section-title">Produtos & Ticket Medio</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Produto Simplificado</div><table id="tblProduto"></table></div>
+  <div class="panel"><div class="panel-title">Distribuicao por Produto (Polar)</div><div class="chart-container chart-md"><canvas id="chartProduto"></canvas></div></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Tipo de Acesso</div><table id="tblAcesso"></table></div>
+  <div class="panel"><div class="panel-title">Metodo de Pagamento</div><table id="tblMetodo"></table></div>
+</div>
+
+<!-- SECTION 4: Equipe & Links -->
+<div class="section-title">Equipe de Vendas & Links</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Performance por Equipe</div><table id="tblEquipe"></table></div>
+  <div class="panel"><div class="panel-title">Radar Comparativo de Equipes</div><div class="chart-container chart-md"><canvas id="chartRadarEquipe"></canvas></div></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Link por Faturamento (horizontal)</div><div class="chart-container chart-lg"><canvas id="chartLinkHBar"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Equipe x Link (detalhado)</div><div class="chart-container chart-lg"><canvas id="chartEquipeLink"></canvas></div></div>
+</div>
+<div class="panel" style="margin-bottom:12px"><div class="panel-title">Faturamento por Equipe (mensal)</div><div class="chart-container chart-md"><canvas id="chartEquipeMes"></canvas></div></div>
+
+<!-- SECTION 5: Renovacao -->
+<div class="section-title">Taxa de Renovacao</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Status das Alunas</div><div class="chart-container chart-sm"><canvas id="chartStatus"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Renovacoes por Mes</div><div class="chart-container chart-md"><canvas id="chartRenov"></canvas></div></div>
+</div>
+
+<!-- SECTION 6: Leads Instagram -->
+<div class="section-title">Funil de Leads Instagram</div>
+<div class="panel" style="margin-bottom:12px">
+  <div class="panel-title">Resumo de Conversao - Leads Instagram (Jan-Mar 2026)</div>
+  <div id="leadsKpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;"></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Evolucao Diaria de Leads</div><div class="chart-container chart-md"><canvas id="chartLeads"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Vendas por Tipo (Dia vs Follow-up)</div><div class="chart-container chart-md"><canvas id="chartLeadsVendas"></canvas></div></div>
+</div>
+<div class="panel" style="margin-bottom:12px">
+  <div class="panel-title">Conversão Comercial - WebFit vs Leads (Jan-Mar 2026)</div>
+  <div id="convComercial" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+</div>
+<div class="panel" style="margin-bottom:12px">
+  <div class="panel-title">Conversão Lançamento/Meteórico vs Leads Captados</div>
+  <div id="convLancMeteo" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Funil de Conversão Mensal (Leads)</div><div class="chart-container chart-md"><canvas id="chartLeadsMensal"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Timeline Mensal - Leads (área empilhada)</div><div class="chart-container chart-md"><canvas id="chartLeadsArea"></canvas></div></div>
+</div>
+
+<!-- SECTION 7: Resumo Mensal -->
+<div class="section-title">Resumo Mensal</div>
+<div class="panel"><table id="tblResumo"></table></div>
+
+<div class="footer">Dashboard gerado automaticamente | Dados: Eduzz (BASE VENDAS + Leads) | Atualizado: Abril 2026</div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+
+const MONTHLY = [
+  [2025,1,161,45705,20248],[2025,2,138,25315,22985],[2025,3,161,41355,37668],
+  [2025,4,166,43734,38894],[2025,5,162,47943,41861],[2025,6,164,49108,43432],
+  [2025,7,205,64169,55786],[2025,8,174,54488,46406],[2025,9,314,92972,80363],
+  [2025,10,152,44767,35775],[2025,11,458,114053,97406],[2025,12,195,55666,47852],
+  [2026,1,361,103936,91009],[2026,2,146,45980,38618],[2026,3,243,77711,64868]
+];
+
+const REEMB = [
+  [2025,1,8,2450],[2025,2,2,700],[2025,3,3,1050],[2025,4,6,2100],[2025,5,9,3297],
+  [2025,6,8,2197],[2025,7,4,1400],[2025,8,4,1400],[2025,9,13,3917],
+  [2025,10,11,3366],[2025,11,14,4071],[2025,12,6,1782],
+  [2026,1,10,3020],[2026,2,5,1785],[2026,3,8,2826]
+];
+
+const PRODUTO = [
+  ["Mobilidade Total",2320,665336,554638],
+  ["Durinho",493,154087,136798],
+  ["PLANO 40+ ATIVA",221,76689,65229],
+  ["Acesso Total/Andrea S.",89,7907,4635],
+  ["Desafio 14 Dias Mais Seca",25,1243,922],
+  ["Combo Verao",6,1182,561],
+  ["Desafio 07 Dias Mais Seca",46,459,388]
+];
+
+const FUNIL = [
+  ["Lancamento",1520,445537,379662],
+  ["Perpetuo (Venda Direta)",1162,337722,276617],
+  ["Meteorico",244,82438,70799],
+  ["Renovacao",246,39419,34446],
+  ["Plataforma",22,904,831],
+  ["Facebook",6,882,816]
+];
+
+const EQUIPE = [
+  ["40+Ativa",1931,528917,477924],
+  ["WebFit",1075,321116,255384],
+  ["Giva",157,44305,19582],
+  ["MasterIA",37,12564,10280]
+];
+
+const LINK = [
+  ["Oferta",960,286786,259411],["WF",627,185476,149124],
+  ["Oferta - WF",428,129550,104019],["Nick",343,98476,88102],
+  ["Live",292,86099,79547],["Antigo",146,43852,19317],
+  ["Renovacao",105,29597,26808],["Gabi",58,14746,13403],
+  ["IA",37,12564,10280],["Manual",34,10245,5862],
+  ["Automatico",145,5879,4231],["Renovacao Oferta",7,1838,1413],
+  ["Facebook",12,1764,1632],["Merker",6,30,23]
+];
+
+const EQUIPE_LINK = [
+  ["40+Ativa","Oferta",960,286786,259411],["40+Ativa","Nick",343,98476,88102],
+  ["40+Ativa","Live",292,86099,79547],["40+Ativa","Renovacao",105,29597,26808],
+  ["40+Ativa","Gabi",58,14746,13403],["40+Ativa","Automatico",134,5426,3965],
+  ["40+Ativa","Manual",14,4155,3621],["40+Ativa","Renovacao Oferta",7,1838,1413],
+  ["40+Ativa","Facebook",12,1764,1632],["40+Ativa","Merker",6,30,23],
+  ["Giva","Antigo",146,43852,19317],["Giva","Automatico",11,453,265],
+  ["MasterIA","IA",37,12564,10280],
+  ["WebFit","WF",627,185476,149124],["WebFit","Oferta - WF",428,129550,104019],
+  ["WebFit","Manual",20,6090,2241]
+];
+
+const ACESSO = [
+  ["Anual",2756,875174,737353],["Trimestral",124,14528,14047],
+  ["Semestral",52,10244,9665],["Mensal",157,6324,4905]
+];
+
+const METODO = [
+  ["Credito",2103,619749,543236],["Pix",844,218825,195735],
+  ["Boleto",135,29988,26061],["Transferencia",4,1238,0],["Paypal",3,1041,0]
+];
+
+const STATUS_ALUNA = [
+  ["Ativa",2146],["Encerrado",640],["Renovar",155],["Vence mes que vem",148]
+];
+
+const EQUIPE_MES = [
+  ["40+Ativa",2025,1,4,1400,665.84],["40+Ativa",2025,2,136,24615.27,23018.89],
+  ["40+Ativa",2025,3,158,40305.16,37719.54],["40+Ativa",2025,4,160,41633.72,38996.36],
+  ["40+Ativa",2025,5,153,44646.49,42055.47],["40+Ativa",2025,6,156,46560.82,43557.40],
+  ["40+Ativa",2025,7,103,30343.57,28409.97],["40+Ativa",2025,8,55,15680.73,14687.76],
+  ["40+Ativa",2025,9,190,54683.69,51382.23],["40+Ativa",2025,10,63,16310.43,15156.52],
+  ["40+Ativa",2025,11,232,56603.54,52515.14],["40+Ativa",2025,12,93,25720.76,24127.34],
+  ["40+Ativa",2026,1,219,63244.02,59307.18],["40+Ativa",2026,2,48,14334.49,13377.15],
+  ["40+Ativa",2026,3,110,36456.07,33891.06],
+  ["WebFit",2025,1,149,41504.71,19650.19],["WebFit",2025,7,98,32425.10,27439.31],
+  ["WebFit",2025,8,115,37406.99,31801.87],["WebFit",2025,9,111,34371.58,29199.06],
+  ["WebFit",2025,10,78,25090.00,20793.00],["WebFit",2025,11,212,53378.91,45141.88],
+  ["WebFit",2025,12,96,28162.90,23816.25],["WebFit",2026,1,132,37672.05,31875.52],
+  ["WebFit",2026,2,93,29860.52,25327.56],["WebFit",2026,3,125,38429.03,31119.49],
+  ["Giva",2025,1,0,0,0],["MasterIA",2026,2,0,0,0],
+  ["MasterIA",2026,3,36,12217.19,10296.78]
+];
+
+const FUNIL_MES = [
+  ["Facebook",2026,3,6,882,815.79],
+  ["Lancamento",2025,1,87,27262.50,12884.10],["Lancamento",2025,2,42,418.74,353.80],
+  ["Lancamento",2025,3,31,10850,10270.69],["Lancamento",2025,4,58,17100.57,16170.85],
+  ["Lancamento",2025,5,72,25494,24132.62],["Lancamento",2025,7,110,38498.90,34394.96],
+  ["Lancamento",2025,9,216,64554.14,59503.78],["Lancamento",2025,11,328,81078.87,73198.86],
+  ["Lancamento",2025,12,131,38908.31,35309.85],["Lancamento",2026,1,237,70391.37,64989.85],
+  ["Lancamento",2026,3,160,55521.56,49317.06],
+  ["Meteorico",2025,6,75,26249.25,24643.27],["Meteorico",2025,8,58,20299.42,18386.61],
+  ["Meteorico",2025,10,56,17940,14883.93],["Meteorico",2026,2,39,12625.94,13150.90],
+  ["Perpetuo (Venda Direta)",2025,1,60,14292.21,6581.93],
+  ["Perpetuo (Venda Direta)",2025,2,85,23346.53,22065.09],
+  ["Perpetuo (Venda Direta)",2025,3,118,28155.16,26448.85],
+  ["Perpetuo (Venda Direta)",2025,4,94,23033.15,21625.51],
+  ["Perpetuo (Venda Direta)",2025,5,73,17652.49,16422.85],
+  ["Perpetuo (Venda Direta)",2025,6,72,18811.57,17514.13],
+  ["Perpetuo (Venda Direta)",2025,7,82,22769.77,20054.32],
+  ["Perpetuo (Venda Direta)",2025,8,101,30788.30,26703.02],
+  ["Perpetuo (Venda Direta)",2025,9,64,19305.13,16581.51],
+  ["Perpetuo (Venda Direta)",2025,10,68,19260.43,17281.64],
+  ["Perpetuo (Venda Direta)",2025,11,91,22835.58,19190.16],
+  ["Perpetuo (Venda Direta)",2025,12,45,12393.35,10251.74],
+  ["Perpetuo (Venda Direta)",2026,1,97,27174.70,23810.85],
+  ["Perpetuo (Venda Direta)",2026,2,96,29069.07,23953.81],
+  ["Perpetuo (Venda Direta)",2026,3,49,13253.42,12862.64],
+  ["Renovacao",2025,1,6,1350,850],["Renovacao",2025,2,9,850,600],
+  ["Renovacao",2025,3,9,1300,1000],["Renovacao",2025,4,8,1500,1200],
+  ["Renovacao",2025,5,8,1500,1500],["Renovacao",2025,6,9,1500,1400],
+  ["Renovacao",2025,7,9,1500,1400],["Renovacao",2025,8,11,2000,1400],
+  ["Renovacao",2025,9,21,5196,4496],["Renovacao",2025,10,17,4200,3784],
+  ["Renovacao",2025,11,25,6068,5268],["Renovacao",2025,12,13,2582,2382],
+  ["Renovacao",2026,1,17,3350,2382],["Renovacao",2026,2,6,2500,1600],
+  ["Renovacao",2026,3,26,5473.14,4684.05],
+  ["Plataforma",2025,3,2,100,80],["Plataforma",2025,9,4,200,150],
+  ["Plataforma",2025,11,3,150,120],["Plataforma",2026,1,5,204.48,180],
+  ["Plataforma",2026,3,8,250,300.94]
+];
+
+const LEADS = [
+  ["01/01",18,9,2,1,0,1],["02/01",18,16,5,1,0,1],["03/01",65,35,9,6,0,6],
+  ["04/01",91,40,10,5,1,6],["05/01",101,65,24,4,3,7],["06/01",72,27,13,5,3,8],
+  ["07/01",63,37,10,3,2,5],["08/01",56,30,3,0,2,2],["09/01",95,41,15,4,4,8],
+  ["10/01",36,25,3,0,1,0],["13/01",8,3,1,1,0,1],
+  ["23/01",11,0,0,0,0,0],["24/01",17,0,0,0,0,0],["25/01",22,0,0,0,0,0],
+  ["26/01",27,0,0,0,0,0],["27/01",44,21,7,0,4,4],["28/01",41,11,10,3,4,7],
+  ["29/01",43,20,7,4,0,4],["30/01",27,10,2,0,1,1],["31/01",35,19,2,1,1,2],
+  ["01/02",16,8,2,0,0,0],["02/02",16,8,6,2,1,3],["03/02",29,20,3,2,2,4],
+  ["04/02",16,12,7,3,3,6],["05/02",46,22,4,1,4,5],["06/02",10,5,1,0,1,1],
+  ["07/02",27,11,5,1,3,4],["08/02",54,22,3,1,1,2],
+  ["09/02",50,27,3,1,2,3],["10/02",48,26,8,1,4,5],["11/02",41,24,7,2,2,4],
+  ["12/02",37,20,4,1,4,5],["13/02",33,16,1,0,1,1],["14/02",24,9,2,0,0,0],
+  ["15/02",45,17,0,0,0,0],["16/02",25,10,4,1,0,1],["17/02",39,13,4,0,1,1],
+  ["18/02",60,26,5,1,4,5],["19/02",33,15,6,1,4,5],["20/02",34,19,4,0,2,2],
+  ["21/02",18,8,4,0,1,1],["22/02",44,17,0,0,1,1],["23/02",63,37,8,2,3,5],
+  ["24/02",85,47,9,2,5,7],["25/02",77,84,5,2,6,8],["26/02",54,28,5,2,2,4],
+  ["27/02",47,21,4,1,2,3],["28/02",55,21,6,0,4,4],
+  ["01/03",57,20,3,1,0,1],["02/03",51,26,7,1,5,6],["03/03",51,27,4,3,1,4],
+  ["04/03",37,16,2,0,2,2],["05/03",39,18,3,0,1,1],["06/03",30,12,2,0,1,1],
+  ["07/03",25,12,2,2,1,3],["08/03",35,9,2,1,1,2],["09/03",29,9,3,1,1,2],
+  ["10/03",7,4,1,0,2,2],["11/03",12,9,3,0,1,1],["12/03",6,3,0,0,0,0],
+  ["18/03",25,9,3,2,0,2],["19/03",23,5,1,0,6,6],
+  ["20/03",31,18,8,6,8,14],["21/03",57,30,11,5,2,7],["22/03",74,26,7,2,1,3],
+  ["23/03",38,18,4,3,4,7],["24/03",47,20,4,1,2,3],["25/03",48,18,4,0,2,2],
+  ["26/03",43,20,2,1,1,2],["27/03",39,6,4,1,0,1],["28/03",77,35,4,2,0,2],
+  ["29/03",44,17,5,2,1,3],["30/03",46,21,2,1,3,4],["31/03",46,16,6,1,3,4]
+];
+
+// NEW DATA: VD_MES [ano-mes, vd, qty, bruto, liquido]
+const VD_MES = [
+  ["2025-07","1",65,19696,16510],["2025-07","2",12,3135,2701],
+  ["2025-08","1",95,30813,24966],["2025-08","2",2,294,251],
+  ["2025-09","1",44,15328,11961],["2025-09","2",24,6128,5036],
+  ["2025-10","1",49,15295,11753],["2025-10","2",35,11276,8617],
+  ["2025-11","1",47,12959,10349],["2025-11","2",51,12598,10672],
+  ["2025-12","1",49,14153,11394],["2025-12","2",1,347,296],
+  ["2026-01","1",75,20740,15947],["2026-01","2",25,7478,6360],
+  ["2026-02","1",61,19163,15850],["2026-02","2",16,5195,4395],
+  ["2026-03","1",33,9289,6760],["2026-03","2",26,6887,5223]
+];
+
+// VD totals for Perpetuo breakdown
+const VD_TOTALS = {
+  '1': { qty:518, bruto:157437, liquido:125490 },
+  '2': { qty:192, bruto:53338, liquido:43551 },
+  'N/A': { qty:445, bruto:125767, liquido:106479 }
+};
+
+// NEW DATA: RENOV_MES [ano, mes, qtdRenovada]
+const RENOV_MES = [
+  [2025,1,15],[2025,2,19],[2025,3,22],[2025,4,21],[2025,5,15],[2025,6,14],
+  [2025,7,17],[2025,8,19],[2025,9,21],[2025,10,19],[2025,11,20],[2025,12,8],
+  [2026,1,20],[2026,2,7],[2026,3,12]
+];
+
+// Conversão Comercial WebFit vs Leads [mes, vendasWebFit, totalLeadsMes]
+const CONV_WEBFIT = [[1,138,891],[2,97,1128],[3,128,1014]]; // Jan-Mar 2026
+
+// Leads Lançamento/Meteórico [mes, leadsLancMeteo, vendasLancMeteo]
+const LEADS_LANC_METEO = [[1,4346,241],[2,885,55],[3,3930,166]]; // Jan-Mar 2026
+
+// ============================================================
+// THEME COLORS
+// ============================================================
+const C = {
+  brand: '#ec2ab5',
+  brandSoft: 'rgba(236,42,181,.35)',
+  equipe: { '40+Ativa':'#ec2ab5', 'WebFit':'#00d4ff', 'Giva':'#ffb347', 'MasterIA':'#77dd77' },
+  funil: { 'Lancamento':'#ec2ab5', 'Perpetuo (Venda Direta)':'#00d4ff', 'Meteorico':'#ffb347', 'Renovacao':'#77dd77', 'Plataforma':'#ff6b6b', 'Facebook':'#9b59b6' },
+  produto: ['#ec2ab5','#00d4ff','#ffb347','#77dd77','#ff6b6b','#9b59b6','#f39c12'],
+  status: { 'Ativa':'#77dd77', 'Encerrado':'#ff6b6b', 'Renovar':'#ffb347', 'Vence mes que vem':'#00d4ff' },
+  vd: { '1':'#00d4ff', '2':'#ffb347', 'N/A':'#888888' },
+  bruto: '#ec2ab5',
+  liquido: '#00d4ff',
+  reembolso: '#ff6b6b',
+  leads: '#ec2ab5',
+  oferta: '#00d4ff',
+  pedLink: '#ffb347',
+  vDia: '#77dd77',
+  vFup: '#00d4ff',
+};
+
+// ============================================================
+// UTILS
+// ============================================================
+const fmt = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtK = (v) => 'R$ ' + (v>=1000 ? (v/1000).toFixed(1)+'k' : v.toFixed(0));
+const fmtN = (v) => Number(v).toLocaleString('pt-BR');
+const fmtP = (v) => (v*100).toFixed(1)+'%';
+const fmtInt = (v) => Math.round(v).toLocaleString('pt-BR');
+const mesLabel = (a,m) => ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1]+'/'+String(a).slice(2);
+
+// Parse DD/MM to month number (all 2026)
+function leadsMonth(dateStr) {
+  const parts = dateStr.split('/');
+  return parseInt(parts[1],10); // month
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+let filterState = { ano:'all', sem:'all', tri:'all', mes:'all', funil:'all', vd:'all' };
+
+function initFilters() {
+  const anos = [...new Set(MONTHLY.map(m=>m[0]))].sort();
+  const fAno = document.getElementById('fAno');
+  anos.forEach(a => { const o=document.createElement('option'); o.value=a; o.textContent=a; fAno.appendChild(o); });
+
+  const funis = FUNIL.map(f=>f[0]);
+  const fFunil = document.getElementById('fFunil');
+  funis.forEach(f => { const o=document.createElement('option'); o.value=f; o.textContent=f; fFunil.appendChild(o); });
+
+  document.getElementById('fAno').addEventListener('change', e => { filterState.ano=e.target.value; updateCascade(); renderAll(); });
+  document.getElementById('fSem').addEventListener('change', e => { filterState.sem=e.target.value; updateMesFromCascade(); renderAll(); });
+  document.getElementById('fTri').addEventListener('change', e => { filterState.tri=e.target.value; updateMesFromCascade(); renderAll(); });
+  document.getElementById('fMes').addEventListener('change', e => { filterState.mes=e.target.value; renderAll(); });
+  document.getElementById('fFunil').addEventListener('change', e => { filterState.funil=e.target.value; renderAll(); });
+  document.getElementById('fVD').addEventListener('change', e => { filterState.vd=e.target.value; renderAll(); });
+
+  updateCascade();
+}
+
+function updateCascade() {
+  const fSem = document.getElementById('fSem');
+  const fTri = document.getElementById('fTri');
+
+  fSem.innerHTML = '<option value="all">Todos</option><option value="1">1o Sem (Jan-Jun)</option><option value="2">2o Sem (Jul-Dez)</option>';
+  fTri.innerHTML = '<option value="all">Todos</option><option value="1">1o Tri (Jan-Mar)</option><option value="2">2o Tri (Abr-Jun)</option><option value="3">3o Tri (Jul-Set)</option><option value="4">4o Tri (Out-Dez)</option>';
+  filterState.sem='all'; filterState.tri='all'; filterState.mes='all';
+  updateMesFromCascade();
+}
+
+function updateMesFromCascade() {
+  const fMes = document.getElementById('fMes');
+  fMes.innerHTML = '<option value="all">Todos</option>';
+  let months = [1,2,3,4,5,6,7,8,9,10,11,12];
+  if(filterState.sem!=='all') { const s=+filterState.sem; months = months.filter(m=> s===1?m<=6:m>=7); }
+  if(filterState.tri!=='all') { const t=+filterState.tri; months = months.filter(m=> m>=(t-1)*3+1 && m<=t*3); }
+  // If ano is set, only show months that exist in data
+  if(filterState.ano!=='all') {
+    const existingMonths = MONTHLY.filter(r=>r[0]==filterState.ano).map(r=>r[1]);
+    months = months.filter(m=>existingMonths.includes(m));
+  }
+  const names = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  months.forEach(m => { const o=document.createElement('option'); o.value=m; o.textContent=names[m-1]; fMes.appendChild(o); });
+  filterState.mes='all';
+}
+
+function matchesTimePeriod(ano, mes) {
+  if(filterState.ano!=='all' && ano!=filterState.ano) return false;
+  if(filterState.sem!=='all') { const s=+filterState.sem; if(s===1 && mes>6) return false; if(s===2 && mes<7) return false; }
+  if(filterState.tri!=='all') { const t=+filterState.tri; if(mes<(t-1)*3+1 || mes>t*3) return false; }
+  if(filterState.mes!=='all' && mes!=filterState.mes) return false;
+  return true;
+}
+
+function getFilteredMonths() {
+  return MONTHLY.filter(m => matchesTimePeriod(m[0],m[1]));
+}
+
+function getFilteredReemb() {
+  return REEMB.filter(m => matchesTimePeriod(m[0],m[1]));
+}
+
+function filterFunilMes(data) {
+  let d = [...data];
+  if(filterState.funil!=='all') d = d.filter(r=>r[0]===filterState.funil);
+  return d.filter(r => matchesTimePeriod(r[1],r[2]));
+}
+
+function filterEquipeMes(data) {
+  return data.filter(r => matchesTimePeriod(r[1],r[2]));
+}
+
+function getFilteredVDMes() {
+  let d = [...VD_MES];
+  if(filterState.vd!=='all') d = d.filter(r=>r[1]===filterState.vd);
+  return d.filter(r => {
+    const [a,m] = r[0].split('-').map(Number);
+    return matchesTimePeriod(a,m);
+  });
+}
+
+function getFilteredRenov() {
+  return RENOV_MES.filter(r => matchesTimePeriod(r[0],r[1]));
+}
+
+function getFilteredLeads() {
+  // All Leads are 2026 (Jan-Mar)
+  return LEADS.filter(l => {
+    const mo = leadsMonth(l[0]);
+    return matchesTimePeriod(2026, mo);
+  });
+}
+
+// ============================================================
+// CHART DEFAULTS
+// ============================================================
+Chart.defaults.color = '#999';
+Chart.defaults.borderColor = '#222';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.register(ChartDataLabels);
+Chart.defaults.plugins.datalabels = { display: false };
+
+const tooltipStyle = {
+  backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',
+  borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+  callbacks:{ label: ctx => { const v=ctx.raw; return typeof v==='number' && ctx.dataset.isCurrency!==false ? fmtK(v):v; } }
+};
+
+const tooltipStyleInt = {
+  backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',
+  borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8
+};
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+
+// --- KPIs ---
+// --- Compute filtered totals from FUNIL_MES when funil/vd filters are active ---
+function getFilteredFunilMesData() {
+  let d = [...FUNIL_MES];
+  d = d.filter(r => matchesTimePeriod(r[1],r[2]));
+  if(filterState.funil!=='all') d = d.filter(r=>r[0]===filterState.funil);
+  return d;
+}
+
+function getKPIData() {
+  // When funil or VD filter is active, use FUNIL_MES for accurate data
+  if(filterState.funil!=='all') {
+    const d = getFilteredFunilMesData();
+    const tBruto = d.reduce((s,r)=>s+r[4],0);
+    const tLiq = d.reduce((s,r)=>s+r[5],0);
+    const tQty = d.reduce((s,r)=>s+r[3],0);
+    return {tBruto,tLiq,tQty};
+  }
+  if(filterState.vd!=='all') {
+    const d = getFilteredVDMes();
+    const tBruto = d.reduce((s,r)=>s+r[3],0);
+    const tLiq = d.reduce((s,r)=>s+r[4],0);
+    const tQty = d.reduce((s,r)=>s+r[2],0);
+    return {tBruto,tLiq,tQty};
+  }
+  const months = getFilteredMonths();
+  return {
+    tBruto: months.reduce((s,m)=>s+m[3],0),
+    tLiq: months.reduce((s,m)=>s+m[4],0),
+    tQty: months.reduce((s,m)=>s+m[2],0)
+  };
+}
+
+function renderKPIs() {
+  const {tBruto,tLiq,tQty} = getKPIData();
+  const reembs = getFilteredReemb();
+  const tReemb = reembs.reduce((s,m)=>s+m[3],0);
+  const tReembQty = reembs.reduce((s,m)=>s+m[2],0);
+  const taxaEduzz = tBruto * 0.06;
+  const tmBruto = tQty>0? tBruto/tQty : 0;
+  const parceiro = tBruto - tLiq - taxaEduzz - tReemb;
+  const filterLabel = filterState.funil!=='all' ? ` <span style="font-size:.55rem;color:${C.funil[filterState.funil]||'#888'}">(${filterState.funil})</span>` : filterState.vd!=='all' ? ` <span style="font-size:.55rem;color:${C.vd[filterState.vd]||'#888'}">(VD ${filterState.vd})</span>` : '';
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card brand"><div class="label">Faturamento Bruto${filterLabel}</div><div class="value">${fmt(tBruto)}</div><div class="sub">${fmtN(tQty)} vendas</div></div>
+    <div class="kpi-card cyan"><div class="label">Faturamento Líquido${filterLabel}</div><div class="value">${fmt(tLiq)}</div><div class="sub">${tBruto>0?fmtP(tLiq/tBruto):'-'} do bruto</div></div>
+    <div class="kpi-card red"><div class="label">Reembolsos</div><div class="value">${fmt(tReemb)}</div><div class="sub">${tReembQty} reemb. (${tQty>0?fmtP(tReembQty/(tQty+tReembQty)):'-'})</div></div>
+    <div class="kpi-card"><div class="label">Taxa Eduzz</div><div class="value">${fmt(taxaEduzz)}</div><div class="sub">6.0% do bruto</div></div>
+    <div class="kpi-card"><div class="label">Ticket Médio Bruto</div><div class="value">${fmt(tmBruto)}</div><div class="sub">Líq: ${fmt(tQty>0?tLiq/tQty:0)}</div></div>
+    <div class="kpi-card"><div class="label">Parceiro / Comissão</div><div class="value">${fmt(Math.max(0,parceiro))}</div><div class="sub">${tBruto>0?fmtP(Math.max(0,parceiro)/tBruto):'-'} do bruto</div></div>
+  `;
+}
+
+// --- Faturamento Chart (responds to funil/vd filters) ---
+let cFat;
+function renderChartFat() {
+  let labels, brutoData, liqData;
+  if(filterState.funil!=='all') {
+    const d = getFilteredFunilMesData();
+    const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
+    labels = months.map(m=>{const [a,mo]=m.split('-');return mesLabel(+a,+mo);});
+    brutoData = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[4],0);});
+    liqData = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[5],0);});
+  } else if(filterState.vd!=='all') {
+    const d = getFilteredVDMes();
+    const months = [...new Set(d.map(r=>r[0]))].sort();
+    labels = months.map(m=>{const [a,mo]=m.split('-');return mesLabel(+a,+mo);});
+    brutoData = months.map(m=>d.filter(r=>r[0]===m).reduce((s,r)=>s+r[3],0));
+    liqData = months.map(m=>d.filter(r=>r[0]===m).reduce((s,r)=>s+r[4],0));
+  } else {
+    const m = getFilteredMonths();
+    labels = m.map(d=>mesLabel(d[0],d[1]));
+    brutoData = m.map(d=>d[3]);
+    liqData = m.map(d=>d[4]);
+  }
+  if(cFat) cFat.destroy();
+  cFat = new Chart(document.getElementById('chartFat'), {
+    type:'bar', data:{ labels, datasets:[
+      {label:'Bruto',data:brutoData,backgroundColor:'rgba(236,42,181,.45)',borderColor:C.bruto,borderWidth:1,borderRadius:3,order:2},
+      {label:'Líquido',data:liqData,backgroundColor:'rgba(0,212,255,.4)',borderColor:C.liquido,borderWidth:1,borderRadius:3,order:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false}}},
+      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+}
+
+// --- Reembolsos Chart (with % line) ---
+let cReemb;
+function renderChartReemb() {
+  const r = getFilteredReemb();
+  const m = getFilteredMonths();
+  const labels = r.map(d=>mesLabel(d[0],d[1]));
+  // Calculate refund rate per month
+  const taxas = r.map(d => {
+    const month = m.find(x=>x[0]===d[0]&&x[1]===d[1]);
+    const vendas = month ? month[2] : 0;
+    return vendas+d[2]>0 ? (d[2]/(vendas+d[2]))*100 : 0;
+  });
+
+  if(cReemb) cReemb.destroy();
+  cReemb = new Chart(document.getElementById('chartReemb'), {
+    type:'bar', data:{ labels, datasets:[
+      {label:'Valor Reembolsado',data:r.map(d=>d[3]),backgroundColor:'rgba(255,107,107,.4)',borderColor:C.reembolso,borderWidth:1,borderRadius:3,yAxisID:'y'},
+      {label:'Quantidade',data:r.map(d=>d[2]),type:'line',borderColor:'#ffb347',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#ffb347',yAxisID:'y1',borderWidth:2},
+      {label:'Taxa Reemb. (%)',data:taxas,type:'line',borderColor:'#00d4ff',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#00d4ff',yAxisID:'y2',borderWidth:2,borderDash:[4,4]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{
+        y:{ticks:{callback:v=>fmtK(v),color:'#999'},grid:{color:'rgba(255,255,255,.04)'}},
+        y1:{position:'right',grid:{display:false},ticks:{stepSize:5,color:'#ffb347'}},
+        y2:{position:'right',grid:{display:false},ticks:{callback:v=>v.toFixed(1)+'%',color:'#00d4ff'},offset:true},
+        x:{grid:{display:false}}
+      },
+      plugins:{tooltip:{
+        backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+        callbacks:{label:ctx=>{
+          if(ctx.datasetIndex===2) return ctx.dataset.label+': '+ctx.raw.toFixed(1)+'%';
+          if(ctx.datasetIndex===1) return ctx.dataset.label+': '+ctx.raw;
+          return ctx.dataset.label+': '+fmtK(ctx.raw);
+        }}
+      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+}
+
+// --- Funil Table & Chart ---
+let cFunil;
+function renderFunil() {
+  const t = document.getElementById('tblFunil');
+  // Filter funil data by VD if applicable
+  let funilData = FUNIL;
+  const totalB = funilData.reduce((s,f)=>s+f[2],0);
+  const fColors = C.funil;
+
+  // VD breakdown info for Perpetuo
+  let vdInfo = '';
+  if(filterState.vd!=='all') {
+    const vdt = VD_TOTALS[filterState.vd];
+    vdInfo = `<tr class="total-row"><td colspan="6" style="color:${C.vd[filterState.vd]};font-size:.7rem">Perpetuo VD${filterState.vd}: ${fmtN(vdt.qty)} vendas, ${fmtK(vdt.bruto)} bruto, ${fmtK(vdt.liquido)} liquido</td></tr>`;
+  }
+
+  t.innerHTML = `<tr><th>Funil</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">TM</th><th class="num">%</th></tr>` +
+    funilData.map(f=>`<tr><td style="color:${fColors[f[0]]||'#888'};font-weight:600">${f[0]}</td><td class="num">${fmtN(f[1])}</td><td class="num bold">${fmtK(f[2])}</td><td class="num">${fmtK(f[3])}</td><td class="num">${fmt(f[2]/f[1])}</td><td class="num muted">${fmtP(f[2]/totalB)}</td></tr>`).join('') + vdInfo;
+
+  const fLabels = funilData.map(f=>f[0]);
+  const fVals = funilData.map(f=>f[1]);
+  const fClrs = fLabels.map(l=>fColors[l]||'#555');
+  if(cFunil) cFunil.destroy();
+  cFunil = new Chart(document.getElementById('chartFunil'), {
+    type:'doughnut', data:{ labels:fLabels, datasets:[{data:fVals,backgroundColor:fClrs,borderWidth:0}] },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{padding:8,usePointStyle:true,pointStyle:'circle',font:{size:10},color:'#bbb'}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtN(ctx.raw)+' vendas'}}}}
+  });
+}
+
+// --- VD Mes Chart ---
+let cVDMes;
+function renderChartVDMes() {
+  const d = getFilteredVDMes();
+  const months = [...new Set(d.map(r=>r[0]))].sort();
+  const labels = months.map(m=>{ const [a,mo]=m.split('-'); return mesLabel(+a,+mo); });
+  const vd1 = months.map(m=>{ const rows=d.filter(r=>r[0]===m&&r[1]==='1'); return rows.reduce((s,r)=>s+r[3],0); });
+  const vd2 = months.map(m=>{ const rows=d.filter(r=>r[0]===m&&r[1]==='2'); return rows.reduce((s,r)=>s+r[3],0); });
+
+  if(cVDMes) cVDMes.destroy();
+  cVDMes = new Chart(document.getElementById('chartVDMes'), {
+    type:'bar', data:{labels, datasets:[
+      {label:'VD1',data:vd1,backgroundColor:'rgba(0,212,255,.45)',borderColor:C.vd['1'],borderWidth:1,borderRadius:3},
+      {label:'VD2',data:vd2,backgroundColor:'rgba(255,179,71,.45)',borderColor:C.vd['2'],borderWidth:1,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false}}},
+      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+}
+
+// --- Funil Mes Chart ---
+let cFunilMes;
+function renderChartFunilMes() {
+  const d = filterFunilMes(FUNIL_MES);
+  const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
+  const labels = months.map(m=>{ const [a,mo]=m.split('-'); return mesLabel(+a,+mo); });
+  const funis = ['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao'];
+  const datasets = funis.map(funil => ({
+    label: funil,
+    data: months.map(m=>{ const [a,mo]=m.split('-'); const row=d.find(r=>r[0]===funil&&r[1]==+a&&r[2]==+mo); return row?row[4]:0; }),
+    backgroundColor: (C.funil[funil]||'#555')+'80',
+    borderColor: C.funil[funil]||'#555',
+    borderWidth:1, borderRadius:2
+  }));
+  if(cFunilMes) cFunilMes.destroy();
+  cFunilMes = new Chart(document.getElementById('chartFunilMes'), {
+    type:'bar', data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false}}},
+      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+}
+
+// --- Produto Table & Polar Area Chart ---
+let cProd;
+function renderProduto() {
+  const t = document.getElementById('tblProduto');
+  const totalB = PRODUTO.reduce((s,p)=>s+p[2],0);
+  t.innerHTML = `<tr><th>Produto</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">TM</th><th class="num">%</th></tr>` +
+    PRODUTO.map(p=>`<tr><td class="brand-text">${p[0]}</td><td class="num">${fmtN(p[1])}</td><td class="num bold">${fmtK(p[2])}</td><td class="num">${fmtK(p[3])}</td><td class="num">${fmt(p[2]/p[1])}</td><td class="num muted">${fmtP(p[2]/totalB)}</td></tr>`).join('');
+
+  if(cProd) cProd.destroy();
+  cProd = new Chart(document.getElementById('chartProduto'), {
+    type:'polarArea', data:{ labels:PRODUTO.map(p=>p[0]), datasets:[{data:PRODUTO.map(p=>p[1]),backgroundColor:C.produto.map(c=>c+'99'),borderColor:C.produto,borderWidth:2}] },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{padding:6,usePointStyle:true,pointStyle:'circle',font:{size:10},color:'#bbb'}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtN(ctx.raw)+' vendas'}}},
+      scales:{r:{grid:{color:'rgba(255,255,255,.06)'},ticks:{display:false}}}
+    }
+  });
+}
+
+// --- Acesso Table ---
+function renderAcesso() {
+  const t = document.getElementById('tblAcesso');
+  const totalB = ACESSO.reduce((s,a)=>s+a[2],0);
+  t.innerHTML = `<tr><th>Acesso</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">%</th></tr>` +
+    ACESSO.map(a=>`<tr><td>${a[0]}</td><td class="num">${fmtN(a[1])}</td><td class="num bold">${fmtK(a[2])}</td><td class="num">${fmtK(a[3])}</td><td class="num muted">${fmtP(a[2]/totalB)}</td></tr>`).join('');
+}
+
+// --- Metodo Table ---
+function renderMetodo() {
+  const t = document.getElementById('tblMetodo');
+  const totalB = METODO.reduce((s,m)=>s+m[2],0);
+  t.innerHTML = `<tr><th>Metodo</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">%</th></tr>` +
+    METODO.map(m=>`<tr><td>${m[0]}</td><td class="num">${fmtN(m[1])}</td><td class="num bold">${fmtK(m[2])}</td><td class="num">${fmtK(m[3]||0)}</td><td class="num muted">${fmtP(m[2]/totalB)}</td></tr>`).join('');
+}
+
+// --- Equipe Table ---
+function renderEquipe() {
+  const t = document.getElementById('tblEquipe');
+  t.innerHTML = `<tr><th>Equipe</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">TM</th><th class="num">TM Liquido</th></tr>` +
+    EQUIPE.map(e=>`<tr><td style="color:${C.equipe[e[0]]||'#888'};font-weight:600">${e[0]}</td><td class="num">${fmtN(e[1])}</td><td class="num bold">${fmtK(e[2])}</td><td class="num">${fmtK(e[3])}</td><td class="num">${fmt(e[2]/e[1])}</td><td class="num">${fmt(e[3]/e[1])}</td></tr>`).join('');
+}
+
+// --- Radar Equipe ---
+let cRadar;
+function renderRadarEquipe() {
+  const maxVendas = Math.max(...EQUIPE.map(e=>e[1]));
+  const maxFat = Math.max(...EQUIPE.map(e=>e[2]));
+  const maxTM = Math.max(...EQUIPE.map(e=>e[2]/e[1]));
+
+  const datasets = EQUIPE.map(e => ({
+    label: e[0],
+    data: [
+      (e[1]/maxVendas)*100,
+      (e[2]/maxFat)*100,
+      ((e[2]/e[1])/maxTM)*100
+    ],
+    backgroundColor: (C.equipe[e[0]]||'#888')+'33',
+    borderColor: C.equipe[e[0]]||'#888',
+    borderWidth: 2,
+    pointBackgroundColor: C.equipe[e[0]]||'#888',
+    pointRadius: 3
+  }));
+
+  if(cRadar) cRadar.destroy();
+  cRadar = new Chart(document.getElementById('chartRadarEquipe'), {
+    type:'radar',
+    data:{ labels:['Vendas','Faturamento','Ticket Medio'], datasets },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{ r:{ beginAtZero:true, max:100, grid:{color:'rgba(255,255,255,.08)'}, angleLines:{color:'rgba(255,255,255,.08)'}, ticks:{display:false}, pointLabels:{color:'#bbb',font:{size:11}} } },
+      plugins:{ legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw.toFixed(0)+'%'}} }
+    }
+  });
+}
+
+// --- Link Horizontal Bar ---
+let cLinkHBar;
+function renderLinkHBar() {
+  const sorted = [...LINK].sort((a,b)=>b[2]-a[2]);
+  const labels = sorted.map(l=>l[0]);
+  const vals = sorted.map(l=>l[2]);
+  const colors = sorted.map((_,i)=>C.produto[i%C.produto.length]);
+
+  if(cLinkHBar) cLinkHBar.destroy();
+  cLinkHBar = new Chart(document.getElementById('chartLinkHBar'), {
+    type:'bar',
+    data:{ labels, datasets:[{label:'Fat. Bruto',data:vals,backgroundColor:colors.map(c=>c+'80'),borderColor:colors,borderWidth:1,borderRadius:3}] },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      scales:{x:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},y:{grid:{display:false},ticks:{color:'#bbb'}}},
+      plugins:{tooltip:tooltipStyle,legend:{display:false}}
+    }
+  });
+}
+
+// --- Equipe Link Pie Chart ---
+let cEquipeLink;
+function renderEquipeLink() {
+  const labels = EQUIPE_LINK.map(el=>el[0]+' / '+el[1]);
+  const vals = EQUIPE_LINK.map(el=>el[3]);
+  const eqColors = {'40+Ativa':['#ec2ab5','#d426a3','#c02291','#ab1e7f','#961a6d','#81165b','#6c1249','#570e37','#420a25','#2d0613'],'Giva':['#ffb347','#e6a23f'],'MasterIA':['#77dd77'],'WebFit':['#00d4ff','#00b8db','#009cb7']};
+  let ci={};
+  const colors = EQUIPE_LINK.map(el=>{
+    const eq=el[0];
+    if(!ci[eq])ci[eq]=0;
+    const arr=eqColors[eq]||['#888'];
+    return arr[ci[eq]++ % arr.length];
+  });
+  if(cEquipeLink) cEquipeLink.destroy();
+  cEquipeLink = new Chart(document.getElementById('chartEquipeLink'), {
+    type:'pie',
+    data:{ labels, datasets:[{data:vals,backgroundColor:colors,borderWidth:1,borderColor:'#111'}] },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{padding:5,usePointStyle:true,pointStyle:'circle',font:{size:9},color:'#bbb'}},
+        tooltip:{callbacks:{label:ctx=>{const t=vals.reduce((s,v)=>s+v,0);return ctx.label+': '+fmtK(ctx.raw)+' ('+fmtP(ctx.raw/t)+')';}}}
+      }
+    }
+  });
+}
+
+// --- Equipe Mes Chart ---
+let cEqMes;
+function renderChartEquipeMes() {
+  const d = filterEquipeMes(EQUIPE_MES);
+  const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
+  const labels = months.map(m=>{ const [a,mo]=m.split('-'); return mesLabel(+a,+mo); });
+  const teams = ['40+Ativa','WebFit','Giva','MasterIA'];
+  const datasets = teams.map(team => ({
+    label: team,
+    data: months.map(m=>{ const [a,mo]=m.split('-'); const row=d.find(r=>r[0]===team&&r[1]==+a&&r[2]==+mo); return row?row[4]:0; }),
+    backgroundColor: (C.equipe[team]||'#555')+'80',
+    borderColor: C.equipe[team]||'#555',
+    borderWidth:1, borderRadius:2
+  }));
+  if(cEqMes) cEqMes.destroy();
+  cEqMes = new Chart(document.getElementById('chartEquipeMes'), {
+    type:'bar', data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false}}},
+      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+}
+
+// --- Status Doughnut ---
+let cStatus;
+function renderStatus() {
+  const labels = STATUS_ALUNA.map(s=>s[0]);
+  const vals = STATUS_ALUNA.map(s=>s[1]);
+  const colors = labels.map(l=>C.status[l]||'#555');
+  if(cStatus) cStatus.destroy();
+  cStatus = new Chart(document.getElementById('chartStatus'), {
+    type:'doughnut', data:{ labels, datasets:[{data:vals,backgroundColor:colors,borderWidth:0}] },
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{padding:8,usePointStyle:true,pointStyle:'circle',font:{size:10},color:'#bbb'}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtN(ctx.raw)+' alunas'}}}}
+  });
+}
+
+// --- Renovacao Chart ---
+let cRenov;
+function renderRenov() {
+  const d = getFilteredRenov();
+  const totalAtivas = STATUS_ALUNA.find(s=>s[0]==='Ativa')?.[1]||2146;
+  const labels = d.map(r=>mesLabel(r[0],r[1]));
+  const renovQty = d.map(r=>r[2]);
+  const renovPct = d.map(r=>(r[2]/totalAtivas)*100);
+
+  if(cRenov) cRenov.destroy();
+  cRenov = new Chart(document.getElementById('chartRenov'), {
+    type:'bar', data:{labels, datasets:[
+      {label:'Renovacoes',data:renovQty,backgroundColor:'rgba(119,221,119,.45)',borderColor:C.vd['1']||'#77dd77',borderWidth:1,borderRadius:3,yAxisID:'y'},
+      {label:'% da Base Ativa',data:renovPct,type:'line',borderColor:'#ec2ab5',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#ec2ab5',borderWidth:2,yAxisID:'y1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{
+        y:{ticks:{color:'#999'},grid:{color:'rgba(255,255,255,.04)'}},
+        y1:{position:'right',grid:{display:false},ticks:{callback:v=>v.toFixed(1)+'%',color:'#ec2ab5'}},
+        x:{grid:{display:false}}
+      },
+      plugins:{tooltip:{
+        backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+        callbacks:{label:ctx=>ctx.datasetIndex===1?ctx.dataset.label+': '+ctx.raw.toFixed(2)+'%':ctx.dataset.label+': '+ctx.raw}
+      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+}
+
+// --- Leads Charts ---
+let cLeads, cLeadsV, cLeadsMensal, cLeadsArea;
+function renderLeads() {
+  const ld = getFilteredLeads();
+  const labels = ld.map(l=>l[0]);
+
+  // Daily leads line chart
+  if(cLeads) cLeads.destroy();
+  cLeads = new Chart(document.getElementById('chartLeads'), {
+    type:'line', data:{ labels, datasets:[
+      {label:'Leads',data:ld.map(l=>l[1]),borderColor:C.leads,backgroundColor:'rgba(236,42,181,.12)',fill:true,tension:.3,pointRadius:0,borderWidth:2},
+      {label:'Na Oferta',data:ld.map(l=>l[2]),borderColor:C.oferta,backgroundColor:'rgba(0,212,255,.08)',fill:true,tension:.3,pointRadius:0,borderWidth:1.5},
+      {label:'Pediram Link',data:ld.map(l=>l[3]),borderColor:C.pedLink,backgroundColor:'transparent',tension:.3,pointRadius:0,borderWidth:1.5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:15,font:{size:9}}}},
+      plugins:{tooltip:tooltipStyleInt,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+
+  // Daily vendas stacked bar
+  if(cLeadsV) cLeadsV.destroy();
+  cLeadsV = new Chart(document.getElementById('chartLeadsVendas'), {
+    type:'bar', data:{ labels, datasets:[
+      {label:'Venda Dia',data:ld.map(l=>l[4]),backgroundColor:'rgba(119,221,119,.5)',borderColor:C.vDia,borderWidth:1,borderRadius:2},
+      {label:'Venda Follow-up',data:ld.map(l=>l[5]),backgroundColor:'rgba(0,212,255,.5)',borderColor:C.vFup,borderWidth:1,borderRadius:2}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false},ticks:{maxTicksLimit:15,font:{size:9}}}},
+      plugins:{tooltip:tooltipStyleInt,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+
+  // Monthly aggregation
+  const monthMap = {};
+  ld.forEach(l => {
+    const mo = leadsMonth(l[0]);
+    if(!monthMap[mo]) monthMap[mo] = {leads:0,oferta:0,pedLink:0,vDia:0,vFup:0,total:0};
+    monthMap[mo].leads += l[1];
+    monthMap[mo].oferta += l[2];
+    monthMap[mo].pedLink += l[3];
+    monthMap[mo].vDia += l[4];
+    monthMap[mo].vFup += l[5];
+    monthMap[mo].total += l[6];
+  });
+  const moKeys = Object.keys(monthMap).sort((a,b)=>+a-+b);
+  const moLabels = moKeys.map(m=>['Jan','Fev','Mar'][+m-1]+'/26');
+
+  // Monthly conversion funnel bar
+  if(cLeadsMensal) cLeadsMensal.destroy();
+  cLeadsMensal = new Chart(document.getElementById('chartLeadsMensal'), {
+    type:'bar', data:{
+      labels: moLabels,
+      datasets:[
+        {label:'Leads',data:moKeys.map(m=>monthMap[m].leads),backgroundColor:'rgba(236,42,181,.5)',borderColor:C.leads,borderWidth:1,borderRadius:3},
+        {label:'Na Oferta',data:moKeys.map(m=>monthMap[m].oferta),backgroundColor:'rgba(0,212,255,.5)',borderColor:C.oferta,borderWidth:1,borderRadius:3},
+        {label:'Pediram Link',data:moKeys.map(m=>monthMap[m].pedLink),backgroundColor:'rgba(255,179,71,.5)',borderColor:C.pedLink,borderWidth:1,borderRadius:3},
+        {label:'Vendas',data:moKeys.map(m=>monthMap[m].vDia+monthMap[m].vFup),backgroundColor:'rgba(119,221,119,.5)',borderColor:C.vDia,borderWidth:1,borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false}}},
+      plugins:{tooltip:tooltipStyleInt,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+
+  // Stacked area timeline
+  if(cLeadsArea) cLeadsArea.destroy();
+  cLeadsArea = new Chart(document.getElementById('chartLeadsArea'), {
+    type:'line', data:{
+      labels: moLabels,
+      datasets:[
+        {label:'Leads',data:moKeys.map(m=>monthMap[m].leads),borderColor:C.leads,backgroundColor:'rgba(236,42,181,.2)',fill:true,tension:.4,borderWidth:2,pointRadius:4,pointBackgroundColor:C.leads},
+        {label:'Na Oferta',data:moKeys.map(m=>monthMap[m].oferta),borderColor:C.oferta,backgroundColor:'rgba(0,212,255,.2)',fill:true,tension:.4,borderWidth:2,pointRadius:4,pointBackgroundColor:C.oferta},
+        {label:'Pediram Link',data:moKeys.map(m=>monthMap[m].pedLink),borderColor:C.pedLink,backgroundColor:'rgba(255,179,71,.2)',fill:true,tension:.4,borderWidth:2,pointRadius:4,pointBackgroundColor:C.pedLink},
+        {label:'Vendas Total',data:moKeys.map(m=>monthMap[m].vDia+monthMap[m].vFup),borderColor:C.vDia,backgroundColor:'rgba(119,221,119,.2)',fill:true,tension:.4,borderWidth:2,pointRadius:4,pointBackgroundColor:C.vDia}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false}}},
+      plugins:{tooltip:tooltipStyleInt,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+
+  // Leads KPIs (integer values, no R$)
+  const totalLeads = ld.reduce((s,l)=>s+l[1],0);
+  const totalOferta = ld.reduce((s,l)=>s+l[2],0);
+  const totalPedLink = ld.reduce((s,l)=>s+l[3],0);
+  const totalVDia = ld.reduce((s,l)=>s+l[4],0);
+  const totalVFup = ld.reduce((s,l)=>s+l[5],0);
+  const totalVendas = totalVDia + totalVFup;
+
+  document.getElementById('leadsKpis').innerHTML = `
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Total Leads</div><div style="font-size:1.1rem;font-weight:700;color:var(--brand)">${fmtInt(totalLeads)}</div></div>
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Na Oferta</div><div style="font-size:1.1rem;font-weight:700;color:var(--cyan)">${fmtInt(totalOferta)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalLeads>0?fmtP(totalOferta/totalLeads):'-'} dos leads</div></div>
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Pediram Link</div><div style="font-size:1.1rem;font-weight:700;color:var(--orange)">${fmtInt(totalPedLink)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalOferta>0?fmtP(totalPedLink/totalOferta):'-'} da oferta</div></div>
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Vendas Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--green)">${fmtInt(totalVendas)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalPedLink>0?fmtP(totalVendas/totalPedLink):'-'} do link</div></div>
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Conversao Geral</div><div style="font-size:1.1rem;font-weight:700">${totalLeads>0?fmtP(totalVendas/totalLeads):'-'}</div><div style="font-size:.65rem;color:var(--text-muted)">lead -> venda</div></div>
+  `;
+}
+
+// --- Conversao Comercial WebFit vs Leads ---
+function renderConvComercial() {
+  const meses = ['Jan/26','Fev/26','Mar/26'];
+  // Leads mensais (soma da aba Leads por mês)
+  const leadsMes = [0,0,0];
+  LEADS.forEach(l=>{const m=parseInt(l[0].split('/')[1]);if(m>=1&&m<=3)leadsMes[m-1]+=l[1];});
+  // Vendas dia (do insta)
+  const vDiaMes = [0,0,0];
+  LEADS.forEach(l=>{const m=parseInt(l[0].split('/')[1]);if(m>=1&&m<=3)vDiaMes[m-1]+=l[4];});
+
+  let html = '';
+  // Conversão Geral (todos os leads vs todas as vendas WebFit)
+  const totalLeads = leadsMes.reduce((s,v)=>s+v,0);
+  const totalWF = CONV_WEBFIT.reduce((s,r)=>s+r[1],0);
+  const totalVDia = vDiaMes.reduce((s,v)=>s+v,0);
+  html += `<div style="text-align:center;padding:12px;background:rgba(0,212,255,.06);border-radius:8px">
+    <div style="font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.5px">Conversão Geral WebFit</div>
+    <div style="font-size:1.2rem;font-weight:700;color:#00d4ff">${fmtP(totalWF/totalLeads)}</div>
+    <div style="font-size:.65rem;color:#888">${fmtN(totalWF)} vendas / ${fmtN(totalLeads)} leads</div></div>`;
+  // Por mês
+  CONV_WEBFIT.forEach((r,i)=>{
+    const conv = leadsMes[i]>0 ? r[1]/leadsMes[i] : 0;
+    html += `<div style="text-align:center;padding:12px">
+      <div style="font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.5px">${meses[i]}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#fff">${fmtP(conv)}</div>
+      <div style="font-size:.65rem;color:#888">WF: ${fmtN(r[1])} | Leads: ${fmtN(leadsMes[i])}</div>
+      <div style="font-size:.6rem;color:#77dd77">Conv. Dia: ${fmtP(leadsMes[i]>0?vDiaMes[i]/leadsMes[i]:0)}</div></div>`;
+  });
+  document.getElementById('convComercial').innerHTML = html;
+}
+
+// --- Conversão Lançamento/Meteórico vs Leads Captados ---
+function renderConvLancMeteo() {
+  const meses = ['Jan/26','Fev/26','Mar/26'];
+  const totalLeadsLM = LEADS_LANC_METEO.reduce((s,r)=>s+r[1],0);
+  const totalVendasLM = LEADS_LANC_METEO.reduce((s,r)=>s+r[2],0);
+  let html = `<div style="text-align:center;padding:12px;background:rgba(236,42,181,.06);border-radius:8px">
+    <div style="font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.5px">Conversão Geral Lanç/Meteo</div>
+    <div style="font-size:1.2rem;font-weight:700;color:var(--brand)">${fmtP(totalVendasLM/totalLeadsLM)}</div>
+    <div style="font-size:.65rem;color:#888">${fmtN(totalVendasLM)} vendas / ${fmtN(totalLeadsLM)} leads</div></div>`;
+  LEADS_LANC_METEO.forEach((r,i)=>{
+    const conv = r[1]>0 ? r[2]/r[1] : 0;
+    html += `<div style="text-align:center;padding:12px">
+      <div style="font-size:.6rem;color:#999;text-transform:uppercase;letter-spacing:.5px">${meses[i]}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#fff">${fmtP(conv)}</div>
+      <div style="font-size:.65rem;color:#888">Vendas: ${fmtN(r[2])} | Leads: ${fmtN(r[1])}</div></div>`;
+  });
+  document.getElementById('convLancMeteo').innerHTML = html;
+}
+
+// --- Resumo Mensal Table (responds to funil/vd filters) ---
+function renderResumo() {
+  const reembs = getFilteredReemb();
+  const t = document.getElementById('tblResumo');
+  let html = `<tr><th>Mês</th><th class="num">Fat. Bruto</th><th class="num">Fat. Líquido</th><th class="num">Vendas</th><th class="num">TM</th><th class="num">TM Líquido</th><th class="num">Reembolsos</th><th class="num">Taxa Reemb.</th><th class="num">Taxa Eduzz</th><th class="num">Parceiro</th></tr>`;
+
+  // Build monthly rows based on active filter
+  let monthRows;
+  if(filterState.funil!=='all') {
+    const d = getFilteredFunilMesData();
+    const keys = [...new Set(d.map(r=>r[1]+'-'+r[2]))].sort((a,b)=>{const [a1,a2]=a.split('-').map(Number);const [b1,b2]=b.split('-').map(Number);return a1-b1||a2-b2;});
+    monthRows = keys.map(k=>{const [a,m]=k.split('-').map(Number);const rows=d.filter(r=>r[1]===a&&r[2]===m);return [a,m,rows.reduce((s,r)=>s+r[3],0),rows.reduce((s,r)=>s+r[4],0),rows.reduce((s,r)=>s+r[5],0)];});
+  } else if(filterState.vd!=='all') {
+    const d = getFilteredVDMes();
+    const keys = [...new Set(d.map(r=>r[0]))].sort();
+    monthRows = keys.map(k=>{const [a,m]=k.split('-').map(Number);const rows=d.filter(r=>r[0]===k);return [a,m,rows.reduce((s,r)=>s+r[2],0),rows.reduce((s,r)=>s+r[3],0),rows.reduce((s,r)=>s+r[4],0)];});
+  } else {
+    monthRows = getFilteredMonths().map(m=>[m[0],m[1],m[2],m[3],m[4]]);
+  }
+
+  let sumB=0,sumL=0,sumQ=0,sumR=0,sumRQ=0;
+  monthRows.forEach(m => {
+    const r = reembs.find(x=>x[0]===m[0]&&x[1]===m[1]);
+    const rVal = r?r[3]:0; const rQty = r?r[2]:0;
+    const taxaR = m[2]>0 ? rQty/(m[2]+rQty) : 0;
+    const eduzz = m[3]*0.06;
+    const parceiro = m[3]-m[4]-eduzz;
+    sumB+=m[3]; sumL+=m[4]; sumQ+=m[2]; sumR+=rVal; sumRQ+=rQty;
+    html += `<tr><td class="bold">${mesLabel(m[0],m[1])}</td><td class="num">${fmt(m[3])}</td><td class="num cyan-text">${fmt(m[4])}</td><td class="num">${fmtN(m[2])}</td><td class="num bold">${m[2]>0?fmt(m[3]/m[2]):'-'}</td><td class="num">${m[2]>0?fmt(m[4]/m[2]):'-'}</td><td class="num red-text">${rQty}</td><td class="num">${fmtP(taxaR)}</td><td class="num">${fmt(eduzz)}</td><td class="num">${fmt(Math.max(0,parceiro))}</td></tr>`;
+  });
+
+  const taxaRT = sumQ>0 ? sumRQ/(sumQ+sumRQ) : 0;
+  const eduzzT = sumB*0.06;
+  const parceiroT = sumB-sumL-eduzzT;
+  html += `<tr class="total-row"><td>TOTAL</td><td class="num brand-text">${fmt(sumB)}</td><td class="num cyan-text">${fmt(sumL)}</td><td class="num">${fmtN(sumQ)}</td><td class="num">${fmt(sumQ>0?sumB/sumQ:0)}</td><td class="num">${fmt(sumQ>0?sumL/sumQ:0)}</td><td class="num red-text">${sumRQ}</td><td class="num">${fmtP(taxaRT)}</td><td class="num">${fmt(eduzzT)}</td><td class="num">${fmt(Math.max(0,parceiroT))}</td></tr>`;
+  t.innerHTML = html;
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  renderKPIs();
+  renderChartFat();
+  renderChartReemb();
+  renderFunil();
+  renderChartVDMes();
+  renderChartFunilMes();
+  renderProduto();
+  renderAcesso();
+  renderMetodo();
+  renderEquipe();
+  renderRadarEquipe();
+  renderLinkHBar();
+  renderEquipeLink();
+  renderChartEquipeMes();
+  renderStatus();
+  renderRenov();
+  renderLeads();
+  renderConvComercial();
+  renderConvLancMeteo();
+  renderResumo();
+}
+
+initFilters();
+renderAll();
+</script>
+</body>
+</html>

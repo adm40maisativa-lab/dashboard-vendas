@@ -383,9 +383,9 @@ function processVendas(rows){
   const paga=all.filter(r=>r.status==='Paga');
   const reembolsado=all.filter(r=>r.status==='Reembolsado');
 
-  // MONTHLY [ano,mes,vendas,bruto,liquido]
+  // MONTHLY [ano,mes,vendas,bruto,liquido] - bruto=SUM(Z) ALL rows, liquido=SUM(AI) ALL rows, vendas=COUNT ALL
   const mm={};
-  paga.forEach(r=>{const k=r.ano+'-'+r.mes;if(!mm[k])mm[k]={a:r.ano,m:r.mes,q:0,b:0,l:0};mm[k].q++;mm[k].b+=r.bruto;mm[k].l+=r.liquido;});
+  all.forEach(r=>{const k=r.ano+'-'+r.mes;if(!mm[k])mm[k]={a:r.ano,m:r.mes,q:0,b:0,l:0};mm[k].q++;mm[k].b+=r.bruto;mm[k].l+=r.liquido;});
   MONTHLY=Object.values(mm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q,Math.round(v.b),Math.round(v.l)]);
 
   // REEMB [ano,mes,qtd,valor]
@@ -395,12 +395,12 @@ function processVendas(rows){
 
   // PRODUTO [nome,vendas,bruto,liquido]
   const pm={};
-  paga.forEach(r=>{if(!r.produto)return;if(!pm[r.produto])pm[r.produto]={n:r.produto,q:0,b:0,l:0};pm[r.produto].q++;pm[r.produto].b+=r.bruto;pm[r.produto].l+=r.liquido;});
+  all.forEach(r=>{if(!r.produto)return;if(!pm[r.produto])pm[r.produto]={n:r.produto,q:0,b:0,l:0};pm[r.produto].q++;pm[r.produto].b+=r.bruto;pm[r.produto].l+=r.liquido;});
   PRODUTO=Object.values(pm).sort((a,b)=>b.b-a.b).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
   // FUNIL [funil,vendas,bruto,liquido]
   const fm={};
-  paga.forEach(r=>{if(!r.funil)return;if(!fm[r.funil])fm[r.funil]={n:r.funil,q:0,b:0,l:0};fm[r.funil].q++;fm[r.funil].b+=r.bruto;fm[r.funil].l+=r.liquido;});
+  all.forEach(r=>{if(!r.funil)return;if(!fm[r.funil])fm[r.funil]={n:r.funil,q:0,b:0,l:0};fm[r.funil].q++;fm[r.funil].b+=r.bruto;fm[r.funil].l+=r.liquido;});
   const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
   const fmKeys=Object.keys(fm);
   const orderedFunil=funilOrd.map(f=>fmKeys.find(k=>norm(k)===f||k===f)).filter(Boolean);
@@ -409,45 +409,45 @@ function processVendas(rows){
 
   // EQUIPE [equipe,vendas,bruto,liquido]
   const em={};
-  paga.forEach(r=>{if(!r.equipe)return;if(!em[r.equipe])em[r.equipe]={n:r.equipe,q:0,b:0,l:0};em[r.equipe].q++;em[r.equipe].b+=r.bruto;em[r.equipe].l+=r.liquido;});
+  all.forEach(r=>{if(!r.equipe)return;if(!em[r.equipe])em[r.equipe]={n:r.equipe,q:0,b:0,l:0};em[r.equipe].q++;em[r.equipe].b+=r.bruto;em[r.equipe].l+=r.liquido;});
   const eqOrd=['40+Ativa','WebFit','Giva','MasterIA'];
   EQUIPE=eqOrd.filter(e=>em[e]).map(e=>em[e]).concat(Object.values(em).filter(v=>!eqOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
   // LINK [link,vendas,bruto,liquido]
   const lm={};
-  paga.forEach(r=>{if(!r.link)return;if(!lm[r.link])lm[r.link]={n:r.link,q:0,b:0,l:0};lm[r.link].q++;lm[r.link].b+=r.bruto;lm[r.link].l+=r.liquido;});
+  all.forEach(r=>{if(!r.link)return;if(!lm[r.link])lm[r.link]={n:r.link,q:0,b:0,l:0};lm[r.link].q++;lm[r.link].b+=r.bruto;lm[r.link].l+=r.liquido;});
   LINK=Object.values(lm).sort((a,b)=>b.b-a.b).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
   // EQUIPE_LINK [equipe,link,vendas,bruto,liquido]
   const elm={};
-  paga.forEach(r=>{if(!r.equipe||!r.link)return;const k=r.equipe+'||'+r.link;if(!elm[k])elm[k]={e:r.equipe,l:r.link,q:0,b:0,l2:0};elm[k].q++;elm[k].b+=r.bruto;elm[k].l2+=r.liquido;});
+  all.forEach(r=>{if(!r.equipe||!r.link)return;const k=r.equipe+'||'+r.link;if(!elm[k])elm[k]={e:r.equipe,l:r.link,q:0,b:0,l2:0};elm[k].q++;elm[k].b+=r.bruto;elm[k].l2+=r.liquido;});
   EQUIPE_LINK=Object.values(elm).sort((a,b)=>{const ei=(eqOrd.indexOf(a.e)===-1?99:eqOrd.indexOf(a.e))-(eqOrd.indexOf(b.e)===-1?99:eqOrd.indexOf(b.e));return ei!==0?ei:b.b-a.b;}).map(v=>[v.e,v.l,v.q,Math.round(v.b),Math.round(v.l2)]);
 
   // ACESSO [acesso,vendas,bruto,liquido]
   const am={};
-  paga.forEach(r=>{if(!r.acesso)return;if(!am[r.acesso])am[r.acesso]={n:r.acesso,q:0,b:0,l:0};am[r.acesso].q++;am[r.acesso].b+=r.bruto;am[r.acesso].l+=r.liquido;});
+  all.forEach(r=>{if(!r.acesso)return;if(!am[r.acesso])am[r.acesso]={n:r.acesso,q:0,b:0,l:0};am[r.acesso].q++;am[r.acesso].b+=r.bruto;am[r.acesso].l+=r.liquido;});
   const acOrd=['Anual','Trimestral','Semestral','Mensal'];
   ACESSO=acOrd.filter(a=>am[a]).map(a=>am[a]).concat(Object.values(am).filter(v=>!acOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
   // METODO [metodo,vendas,bruto,liquido]
   const mtm={};
-  paga.forEach(r=>{if(!r.metodo)return;if(!mtm[r.metodo])mtm[r.metodo]={n:r.metodo,q:0,b:0,l:0};mtm[r.metodo].q++;mtm[r.metodo].b+=r.bruto;mtm[r.metodo].l+=r.liquido;});
+  all.forEach(r=>{if(!r.metodo)return;if(!mtm[r.metodo])mtm[r.metodo]={n:r.metodo,q:0,b:0,l:0};mtm[r.metodo].q++;mtm[r.metodo].b+=r.bruto;mtm[r.metodo].l+=r.liquido;});
   const mtOrd=['Credito','Pix','Boleto','Transferencia','Paypal'];
   METODO=mtOrd.filter(m=>mtm[m]).map(m=>mtm[m]).concat(Object.values(mtm).filter(v=>!mtOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
   // EQUIPE_MES [equipe,ano,mes,vendas,bruto,liquido]
   const emm={};
-  paga.forEach(r=>{if(!r.equipe)return;const k=r.equipe+'-'+r.ano+'-'+r.mes;if(!emm[k])emm[k]={e:r.equipe,a:r.ano,m:r.mes,q:0,b:0,l:0};emm[k].q++;emm[k].b+=r.bruto;emm[k].l+=r.liquido;});
+  all.forEach(r=>{if(!r.equipe)return;const k=r.equipe+'-'+r.ano+'-'+r.mes;if(!emm[k])emm[k]={e:r.equipe,a:r.ano,m:r.mes,q:0,b:0,l:0};emm[k].q++;emm[k].b+=r.bruto;emm[k].l+=r.liquido;});
   EQUIPE_MES=Object.values(emm).sort((a,b)=>{const ei=(eqOrd.indexOf(a.e)===-1?99:eqOrd.indexOf(a.e))-(eqOrd.indexOf(b.e)===-1?99:eqOrd.indexOf(b.e));return ei!==0?ei:a.a-b.a||a.m-b.m;}).map(v=>[v.e,v.a,v.m,v.q,v.b,v.l]);
 
   // FUNIL_MES [funil,ano,mes,vendas,bruto,liquido]
   const fmm={};
-  paga.forEach(r=>{if(!r.funil)return;const k=r.funil+'-'+r.ano+'-'+r.mes;if(!fmm[k])fmm[k]={f:r.funil,a:r.ano,m:r.mes,q:0,b:0,l:0};fmm[k].q++;fmm[k].b+=r.bruto;fmm[k].l+=r.liquido;});
+  all.forEach(r=>{if(!r.funil)return;const k=r.funil+'-'+r.ano+'-'+r.mes;if(!fmm[k])fmm[k]={f:r.funil,a:r.ano,m:r.mes,q:0,b:0,l:0};fmm[k].q++;fmm[k].b+=r.bruto;fmm[k].l+=r.liquido;});
   FUNIL_MES=Object.values(fmm).sort((a,b)=>a.f.localeCompare(b.f)||a.a-b.a||a.m-b.m).map(v=>[v.f,v.a,v.m,v.q,v.b,v.l]);
 
   // VD_MES [ano-mes,vd,vendas,bruto,liquido] (Perpetuo only, VD 1 or 2)
   const vdm={};
-  paga.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)'&&r.vd&&r.vd!=='N/A').forEach(r=>{
+  all.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)'&&r.vd&&r.vd!=='N/A').forEach(r=>{
     const ym=r.ano+'-'+String(r.mes).padStart(2,'0');const k=ym+'-'+r.vd;
     if(!vdm[k])vdm[k]={ym,vd:r.vd,q:0,b:0,l:0};vdm[k].q++;vdm[k].b+=r.bruto;vdm[k].l+=r.liquido;
   });
@@ -455,7 +455,7 @@ function processVendas(rows){
 
   // VD_TOTALS
   VD_TOTALS={};
-  paga.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)').forEach(r=>{
+  all.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)').forEach(r=>{
     const vd=r.vd||'N/A';if(!VD_TOTALS[vd])VD_TOTALS[vd]={qty:0,bruto:0,liquido:0};
     VD_TOTALS[vd].qty++;VD_TOTALS[vd].bruto+=r.bruto;VD_TOTALS[vd].liquido+=r.liquido;
   });

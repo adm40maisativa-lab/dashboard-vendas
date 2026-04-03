@@ -280,7 +280,29 @@ if(sessionStorage.getItem('dash_auth')==='1') {
 const SHEET_ID = '1rRwfgp3yDO1wi3PjPlW_FBEpoaHrtqeP6Il-u1niAFQ';
 const GID_VENDAS = '1281393171';
 const GID_LEADS = '399016506';
-const COL = { status:2, metodo:3, dataCriacao:9, valorItem:25, valorReemb:26, ganhoLiq:34, cliente:35, produto:55, ano:56, mes:57, dia:58, acesso:59, funil:65, detalheRenov:66, equipe:67, link:68, vd:69 };
+let COL = {}; // Populated dynamically from header row
+
+function findColumns(headers) {
+  const map = {
+    'Status':'status', 'Método de Pagamento':'metodo', 'Metodo de Pagamento':'metodo',
+    'Data de Criação':'dataCriacao', 'Data de Criacao':'dataCriacao',
+    'Valor do Item':'valorItem', 'Valor Reembolsado':'valorReemb',
+    'Ganho Liquido':'ganhoLiq', 'Ganho Líquido':'ganhoLiq',
+    'Cliente / Nome':'cliente', 'Produto Simplificado':'produto',
+    'Ano Criação':'ano', 'Ano Criacao':'ano', 'Ano Criação':'ano',
+    'Mês Criação':'mes', 'Mes Criação':'mes', 'Mes Criacao':'mes', 'Mês Criacao':'mes',
+    'Dia Criação':'dia', 'Dia Criacao':'dia', 'Dia Criação':'dia',
+    'Acesso':'acesso', 'Funil':'funil',
+    'Detalhe Renovação':'detalheRenov', 'Detalhe Renovacao':'detalheRenov',
+    'Equipe de Venda':'equipe', 'Link':'link', 'Venda Direta':'vd'
+  };
+  COL = {};
+  headers.forEach((h, i) => {
+    const clean = h.replace(/"/g,'').trim();
+    if (map[clean]) COL[map[clean]] = i;
+  });
+  console.log('Column mapping:', COL);
+}
 
 // ============================================================
 // DATA (populated dynamically from Google Sheets)
@@ -349,6 +371,7 @@ async function fetchSheetData(){
 // PROCESS BASE VENDAS
 // ============================================================
 function processVendas(rows){
+  findColumns(rows[0]); // Dynamic header lookup
   const data=rows.slice(1);
   const all=data.map(r=>({
     status:ps(r[COL.status]),metodo:ps(r[COL.metodo]),bruto:pn(r[COL.valorItem]),reemb:pn(r[COL.valorReemb]),

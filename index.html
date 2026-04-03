@@ -402,7 +402,10 @@ function processVendas(rows){
   const fm={};
   paga.forEach(r=>{if(!r.funil)return;if(!fm[r.funil])fm[r.funil]={n:r.funil,q:0,b:0,l:0};fm[r.funil].q++;fm[r.funil].b+=r.bruto;fm[r.funil].l+=r.liquido;});
   const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
-  FUNIL=funilOrd.filter(f=>fm[f]).map(f=>fm[f]).concat(Object.values(fm).filter(v=>!funilOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+  const fmKeys=Object.keys(fm);
+  const orderedFunil=funilOrd.map(f=>fmKeys.find(k=>norm(k)===f||k===f)).filter(Boolean);
+  const unordered=fmKeys.filter(k=>!orderedFunil.includes(k));
+  FUNIL=orderedFunil.concat(unordered).map(k=>fm[k]).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
   // EQUIPE [equipe,vendas,bruto,liquido]
   const em={};
@@ -444,7 +447,7 @@ function processVendas(rows){
 
   // VD_MES [ano-mes,vd,vendas,bruto,liquido] (Perpetuo only, VD 1 or 2)
   const vdm={};
-  paga.filter(r=>r.funil==='Perpetuo (Venda Direta)'&&r.vd&&r.vd!=='N/A').forEach(r=>{
+  paga.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)'&&r.vd&&r.vd!=='N/A').forEach(r=>{
     const ym=r.ano+'-'+String(r.mes).padStart(2,'0');const k=ym+'-'+r.vd;
     if(!vdm[k])vdm[k]={ym,vd:r.vd,q:0,b:0,l:0};vdm[k].q++;vdm[k].b+=r.bruto;vdm[k].l+=r.liquido;
   });
@@ -452,7 +455,7 @@ function processVendas(rows){
 
   // VD_TOTALS
   VD_TOTALS={};
-  paga.filter(r=>r.funil==='Perpetuo (Venda Direta)').forEach(r=>{
+  paga.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)').forEach(r=>{
     const vd=r.vd||'N/A';if(!VD_TOTALS[vd])VD_TOTALS[vd]={qty:0,bruto:0,liquido:0};
     VD_TOTALS[vd].qty++;VD_TOTALS[vd].bruto+=r.bruto;VD_TOTALS[vd].liquido+=r.liquido;
   });
@@ -461,7 +464,7 @@ function processVendas(rows){
   // RENOV_MES [ano,mes,qtdRenovada]
   const rnm={};
   const renovRows=paga.filter(r=>r.detalheRenov&&r.detalheRenov!=='N/A');
-  (renovRows.length>0?renovRows:paga.filter(r=>r.funil==='Renovacao')).forEach(r=>{
+  (renovRows.length>0?renovRows:paga.filter(r=>norm(r.funil)==='Renovacao')).forEach(r=>{
     const k=r.ano+'-'+r.mes;if(!rnm[k])rnm[k]={a:r.ano,m:r.mes,q:0};rnm[k].q++;
   });
   RENOV_MES=Object.values(rnm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q]);
@@ -509,7 +512,7 @@ function processLeads(rows){
   data.forEach(r=>{const v=pi(r[7]);if(v>0){const mo=parseInt(ps(r[0]).split('/')[1]);if(mo>=1&&mo<=12){if(!llm[mo])llm[mo]=0;llm[mo]+=v;}}});
   LEADS_LANC_METEO=[1,2,3].map(mes=>{
     const leads=llm[mes]||0;
-    const vendas=FUNIL_MES.filter(r=>(r[0]==='Lancamento'||r[0]==='Meteorico')&&r[1]===2026&&r[2]===mes).reduce((s,r)=>s+r[3],0);
+    const vendas=FUNIL_MES.filter(r=>(norm(r[0])==='Lancamento'||norm(r[0])==='Meteorico')&&r[1]===2026&&r[2]===mes).reduce((s,r)=>s+r[3],0);
     return [mes,leads,vendas];
   });
 }
@@ -517,11 +520,14 @@ function processLeads(rows){
 // ============================================================
 // THEME COLORS
 // ============================================================
+// Normalize: strip accents for consistent key matching
+function norm(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+
 const C = {
   brand: '#ec2ab5',
   brandSoft: 'rgba(236,42,181,.35)',
   equipe: { '40+Ativa':'#ec2ab5', 'WebFit':'#00d4ff', 'Giva':'#ffb347', 'MasterIA':'#77dd77' },
-  funil: { 'Lancamento':'#ec2ab5', 'Perpetuo (Venda Direta)':'#00d4ff', 'Meteorico':'#ffb347', 'Renovacao':'#77dd77', 'Plataforma':'#ff6b6b', 'Facebook':'#9b59b6' },
+  funil: { 'Lancamento':'#ec2ab5', 'Perpetuo (Venda Direta)':'#00d4ff', 'Meteorico':'#ffb347', 'Renovacao':'#77dd77', 'Plataforma':'#ff6b6b', 'Plataforma (compra individual)':'#ff6b6b', 'Facebook':'#9b59b6' },
   produto: ['#ec2ab5','#00d4ff','#ffb347','#77dd77','#ff6b6b','#9b59b6','#f39c12'],
   status: { 'Ativa':'#77dd77', 'Encerrado':'#ff6b6b', 'Renovar':'#ffb347', 'Vence mes que vem':'#00d4ff' },
   vd: { '1':'#00d4ff', '2':'#ffb347', 'N/A':'#888888' },
@@ -534,6 +540,8 @@ const C = {
   vDia: '#77dd77',
   vFup: '#00d4ff',
 };
+// Lookup color by normalized key (strips accents)
+function fc(map,key){return map[key]||map[norm(key)]||'#888';}
 
 // ============================================================
 // UTILS
@@ -714,7 +722,7 @@ function renderKPIs() {
   const taxaEduzz = tBruto * 0.06;
   const tmBruto = tQty>0? tBruto/tQty : 0;
   const parceiro = tBruto - tLiq - taxaEduzz - tReemb;
-  const filterLabel = filterState.funil!=='all' ? ` <span style="font-size:.55rem;color:${C.funil[filterState.funil]||'#888'}">(${filterState.funil})</span>` : filterState.vd!=='all' ? ` <span style="font-size:.55rem;color:${C.vd[filterState.vd]||'#888'}">(VD ${filterState.vd})</span>` : '';
+  const filterLabel = filterState.funil!=='all' ? ` <span style="font-size:.55rem;color:${fc(C.funil,filterState.funil)}">(${filterState.funil})</span>` : filterState.vd!=='all' ? ` <span style="font-size:.55rem;color:${C.vd[filterState.vd]||'#888'}">(VD ${filterState.vd})</span>` : '';
 
   document.getElementById('kpiRow').innerHTML = `
     <div class="kpi-card brand"><div class="label">Faturamento Bruto${filterLabel}</div><div class="value">${fmt(tBruto)}</div><div class="sub">${fmtN(tQty)} vendas</div></div>
@@ -807,8 +815,6 @@ function renderFunil() {
   // Filter funil data by VD if applicable
   let funilData = FUNIL;
   const totalB = funilData.reduce((s,f)=>s+f[2],0);
-  const fColors = C.funil;
-
   // VD breakdown info for Perpetuo
   let vdInfo = '';
   if(filterState.vd!=='all') {
@@ -817,11 +823,11 @@ function renderFunil() {
   }
 
   t.innerHTML = `<tr><th>Funil</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">TM</th><th class="num">%</th></tr>` +
-    funilData.map(f=>`<tr><td style="color:${fColors[f[0]]||'#888'};font-weight:600">${f[0]}</td><td class="num">${fmtN(f[1])}</td><td class="num bold">${fmtK(f[2])}</td><td class="num">${fmtK(f[3])}</td><td class="num">${fmt(f[2]/f[1])}</td><td class="num muted">${fmtP(f[2]/totalB)}</td></tr>`).join('') + vdInfo;
+    funilData.map(f=>`<tr><td style="color:${fc(C.funil,f[0])};font-weight:600">${f[0]}</td><td class="num">${fmtN(f[1])}</td><td class="num bold">${fmtK(f[2])}</td><td class="num">${fmtK(f[3])}</td><td class="num">${fmt(f[2]/f[1])}</td><td class="num muted">${fmtP(f[2]/totalB)}</td></tr>`).join('') + vdInfo;
 
   const fLabels = funilData.map(f=>f[0]);
   const fVals = funilData.map(f=>f[1]);
-  const fClrs = fLabels.map(l=>fColors[l]||'#555');
+  const fClrs = fLabels.map(l=>fc(C.funil,l));
   if(cFunil) cFunil.destroy();
   cFunil = new Chart(document.getElementById('chartFunil'), {
     type:'doughnut', data:{ labels:fLabels, datasets:[{data:fVals,backgroundColor:fClrs,borderWidth:0}] },
@@ -857,12 +863,12 @@ function renderChartFunilMes() {
   const d = filterFunilMes(FUNIL_MES);
   const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
   const labels = months.map(m=>{ const [a,mo]=m.split('-'); return mesLabel(+a,+mo); });
-  const funis = ['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao'];
+  const funis = [...new Set(d.map(r=>r[0]))].sort();
   const datasets = funis.map(funil => ({
     label: funil,
     data: months.map(m=>{ const [a,mo]=m.split('-'); const row=d.find(r=>r[0]===funil&&r[1]==+a&&r[2]==+mo); return row?row[4]:0; }),
-    backgroundColor: (C.funil[funil]||'#555')+'80',
-    borderColor: C.funil[funil]||'#555',
+    backgroundColor: fc(C.funil,funil)+'80',
+    borderColor: fc(C.funil,funil),
     borderWidth:1, borderRadius:2
   }));
   if(cFunilMes) cFunilMes.destroy();

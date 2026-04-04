@@ -202,6 +202,13 @@ if(sessionStorage.getItem('dash_auth')==='1') {
   <div class="panel"><div class="panel-title">Reembolsos por Mes (com Taxa %)</div><div class="chart-container chart-md"><canvas id="chartReemb"></canvas></div></div>
 </div>
 
+<!-- SECTION: Faturamento Diario -->
+<div class="section-title">Faturamento Diario</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Faturamento por Dia (Bruto vs Liquido)</div><div class="chart-container chart-md"><canvas id="chartDaily"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Vendas por Dia (quantidade)</div><div class="chart-container chart-md"><canvas id="chartDailyQty"></canvas></div></div>
+</div>
+
 <!-- SECTION 2: Funil de Vendas -->
 <div class="section-title">Funil de Vendas</div>
 <div class="grid-2">
@@ -266,6 +273,17 @@ if(sessionStorage.getItem('dash_auth')==='1') {
   <div class="panel"><div class="panel-title">Timeline Mensal - Leads (área empilhada)</div><div class="chart-container chart-md"><canvas id="chartLeadsArea"></canvas></div></div>
 </div>
 
+<!-- SECTION: Comparativo de Conversoes -->
+<div class="section-title">Comparativo de Conversoes</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Taxa de Conversao por Funil (Vendas vs Total)</div><div class="chart-container chart-md"><canvas id="chartConvFunil"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Conversao Mensal - Leads a Vendas (%)</div><div class="chart-container chart-md"><canvas id="chartConvTrend"></canvas></div></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Conversao por Equipe (% do Total)</div><div class="chart-container chart-md"><canvas id="chartConvEquipe"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Funil de Conversao - Leads Instagram</div><div class="chart-container chart-md"><canvas id="chartConvFunnel"></canvas></div></div>
+</div>
+
 <!-- SECTION 7: Resumo Mensal -->
 <div class="section-title">Resumo Mensal</div>
 <div class="panel"><table id="tblResumo"></table></div>
@@ -310,6 +328,7 @@ function findColumns(headers) {
 let MONTHLY=[], REEMB=[], PRODUTO=[], FUNIL=[], EQUIPE=[], LINK=[], EQUIPE_LINK=[];
 let ACESSO=[], METODO=[], STATUS_ALUNA=[], EQUIPE_MES=[], FUNIL_MES=[];
 let LEADS=[], VD_MES=[], VD_TOTALS={}, RENOV_MES=[], CONV_WEBFIT=[], LEADS_LANC_METEO=[];
+let RAW_ALL=[], RAW_PAGA=[], RAW_REEMB=[], DAILY=[];
 
 // ============================================================
 // CSV PARSER
@@ -493,6 +512,11 @@ function processVendas(rows){
     const v=paga.filter(r=>r.equipe==='WebFit'&&r.ano===2026&&r.mes===mes).length;
     return [mes,v,0];
   });
+
+  // Save raw data for dynamic filtering
+  RAW_ALL = all;
+  RAW_PAGA = paga;
+  RAW_REEMB = reembolsado;
 }
 
 // ============================================================
@@ -654,6 +678,81 @@ function getFilteredLeads() {
     const mo = leadsMonth(l[0]);
     return matchesTimePeriod(2026, mo);
   });
+}
+
+// ============================================================
+// DYNAMIC AGGREGATE RECOMPUTATION (responds to ALL filters)
+// ============================================================
+function getFilteredRaw() {
+  let data = RAW_ALL;
+  data = data.filter(r => matchesTimePeriod(r.ano, r.mes));
+  if(filterState.funil!=='all') data = data.filter(r => r.funil === filterState.funil);
+  if(filterState.vd!=='all') data = data.filter(r => r.vd === filterState.vd);
+  return data;
+}
+
+function recomputeAggregates() {
+  const filtered = getFilteredRaw();
+  const eqOrd=['40+Ativa','WebFit','Giva','MasterIA'];
+  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
+
+  // PRODUTO
+  const pm={};
+  filtered.forEach(r=>{if(!r.produto)return;if(!pm[r.produto])pm[r.produto]={n:r.produto,q:0,b:0,l:0};pm[r.produto].q++;pm[r.produto].b+=r.bruto;pm[r.produto].l+=r.liquido;});
+  PRODUTO=Object.values(pm).sort((a,b)=>b.b-a.b).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // FUNIL
+  const fm={};
+  filtered.forEach(r=>{if(!r.funil)return;if(!fm[r.funil])fm[r.funil]={n:r.funil,q:0,b:0,l:0};fm[r.funil].q++;fm[r.funil].b+=r.bruto;fm[r.funil].l+=r.liquido;});
+  const fmKeys=Object.keys(fm);
+  const orderedFunil=funilOrd.map(f=>fmKeys.find(k=>norm(k)===f||k===f)).filter(Boolean);
+  const unordered=fmKeys.filter(k=>!orderedFunil.includes(k));
+  FUNIL=orderedFunil.concat(unordered).map(k=>fm[k]).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // EQUIPE
+  const em={};
+  filtered.forEach(r=>{if(!r.equipe)return;if(!em[r.equipe])em[r.equipe]={n:r.equipe,q:0,b:0,l:0};em[r.equipe].q++;em[r.equipe].b+=r.bruto;em[r.equipe].l+=r.liquido;});
+  EQUIPE=eqOrd.filter(e=>em[e]).map(e=>em[e]).concat(Object.values(em).filter(v=>!eqOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // LINK
+  const lm={};
+  filtered.forEach(r=>{if(!r.link)return;if(!lm[r.link])lm[r.link]={n:r.link,q:0,b:0,l:0};lm[r.link].q++;lm[r.link].b+=r.bruto;lm[r.link].l+=r.liquido;});
+  LINK=Object.values(lm).sort((a,b)=>b.b-a.b).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // EQUIPE_LINK
+  const elm={};
+  filtered.forEach(r=>{if(!r.equipe||!r.link)return;const k=r.equipe+'||'+r.link;if(!elm[k])elm[k]={e:r.equipe,l:r.link,q:0,b:0,l2:0};elm[k].q++;elm[k].b+=r.bruto;elm[k].l2+=r.liquido;});
+  EQUIPE_LINK=Object.values(elm).sort((a,b)=>{const ei=(eqOrd.indexOf(a.e)===-1?99:eqOrd.indexOf(a.e))-(eqOrd.indexOf(b.e)===-1?99:eqOrd.indexOf(b.e));return ei!==0?ei:b.b-a.b;}).map(v=>[v.e,v.l,v.q,Math.round(v.b),Math.round(v.l2)]);
+
+  // ACESSO
+  const am={};
+  filtered.forEach(r=>{if(!r.acesso)return;if(!am[r.acesso])am[r.acesso]={n:r.acesso,q:0,b:0,l:0};am[r.acesso].q++;am[r.acesso].b+=r.bruto;am[r.acesso].l+=r.liquido;});
+  const acOrd=['Anual','Trimestral','Semestral','Mensal'];
+  ACESSO=acOrd.filter(a=>am[a]).map(a=>am[a]).concat(Object.values(am).filter(v=>!acOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // METODO
+  const mtm={};
+  filtered.forEach(r=>{if(!r.metodo)return;if(!mtm[r.metodo])mtm[r.metodo]={n:r.metodo,q:0,b:0,l:0};mtm[r.metodo].q++;mtm[r.metodo].b+=r.bruto;mtm[r.metodo].l+=r.liquido;});
+  const mtOrd=['Credito','Pix','Boleto','Transferencia','Paypal'];
+  METODO=mtOrd.filter(m=>mtm[m]).map(m=>mtm[m]).concat(Object.values(mtm).filter(v=>!mtOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // VD_TOTALS (filtered)
+  VD_TOTALS={};
+  filtered.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)').forEach(r=>{
+    const vd=r.vd||'N/A';if(!VD_TOTALS[vd])VD_TOTALS[vd]={qty:0,bruto:0,liquido:0};
+    VD_TOTALS[vd].qty++;VD_TOTALS[vd].bruto+=r.bruto;VD_TOTALS[vd].liquido+=r.liquido;
+  });
+  Object.keys(VD_TOTALS).forEach(k=>{VD_TOTALS[k].bruto=Math.round(VD_TOTALS[k].bruto);VD_TOTALS[k].liquido=Math.round(VD_TOTALS[k].liquido);});
+
+  // DAILY [ano,mes,dia,vendas,bruto,liquido]
+  const dm={};
+  filtered.forEach(r=>{
+    if(!r.dia)return;
+    const k=r.ano+'-'+String(r.mes).padStart(2,'0')+'-'+String(r.dia).padStart(2,'0');
+    if(!dm[k])dm[k]={a:r.ano,m:r.mes,d:r.dia,q:0,b:0,l:0};
+    dm[k].q++;dm[k].b+=r.bruto;dm[k].l+=r.liquido;
+  });
+  DAILY=Object.values(dm).sort((a,b)=>a.a-b.a||a.m-b.m||a.d-b.d).map(v=>[v.a,v.m,v.d,v.q,Math.round(v.b),Math.round(v.l)]);
 }
 
 // ============================================================
@@ -1216,6 +1315,177 @@ function renderConvLancMeteo() {
   document.getElementById('convLancMeteo').innerHTML = html;
 }
 
+// --- Daily Charts ---
+let cDaily, cDailyQty;
+function renderChartDaily() {
+  const d = DAILY;
+  if(d.length===0){if(cDaily){cDaily.destroy();cDaily=null;}if(cDailyQty){cDailyQty.destroy();cDailyQty=null;}return;}
+  const labels = d.map(r=>String(r[2]).padStart(2,'0')+'/'+String(r[1]).padStart(2,'0'));
+  const brutoData = d.map(r=>r[4]);
+  const liqData = d.map(r=>r[5]);
+  const qtyData = d.map(r=>r[3]);
+
+  // Média móvel 7 dias para bruto
+  const ma7 = brutoData.map((_,i)=>{
+    const start=Math.max(0,i-6);
+    const slice=brutoData.slice(start,i+1);
+    return Math.round(slice.reduce((s,v)=>s+v,0)/slice.length);
+  });
+
+  if(cDaily) cDaily.destroy();
+  cDaily = new Chart(document.getElementById('chartDaily'), {
+    type:'bar', data:{labels, datasets:[
+      {label:'Bruto',data:brutoData,backgroundColor:'rgba(236,42,181,.35)',borderColor:C.bruto,borderWidth:1,borderRadius:2,order:2},
+      {label:'Liquido',data:liqData,backgroundColor:'rgba(0,212,255,.3)',borderColor:C.liquido,borderWidth:1,borderRadius:2,order:3},
+      {label:'Media 7d (Bruto)',data:ma7,type:'line',borderColor:'#ffb347',backgroundColor:'transparent',pointRadius:0,borderWidth:2,borderDash:[4,4],order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:20,font:{size:9}}}},
+      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+
+  // Quantidade diária
+  const ma7q = qtyData.map((_,i)=>{
+    const start=Math.max(0,i-6);
+    const slice=qtyData.slice(start,i+1);
+    return +(slice.reduce((s,v)=>s+v,0)/slice.length).toFixed(1);
+  });
+
+  if(cDailyQty) cDailyQty.destroy();
+  cDailyQty = new Chart(document.getElementById('chartDailyQty'), {
+    type:'bar', data:{labels, datasets:[
+      {label:'Vendas/dia',data:qtyData,backgroundColor:'rgba(119,221,119,.4)',borderColor:'#77dd77',borderWidth:1,borderRadius:2,order:2},
+      {label:'Media 7d',data:ma7q,type:'line',borderColor:'#ec2ab5',backgroundColor:'transparent',pointRadius:0,borderWidth:2,order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:20,font:{size:9}}}},
+      plugins:{tooltip:tooltipStyleInt,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+}
+
+// --- Conversion Comparison Charts ---
+let cConvFunil, cConvTrend, cConvEquipe, cConvFunnel;
+
+function renderConvComparison() {
+  // 1. Conversão por Funil - cada funil como % do total de vendas
+  const totalQty = FUNIL.reduce((s,f)=>s+f[1],0);
+  const totalBruto = FUNIL.reduce((s,f)=>s+f[2],0);
+  const fLabels = FUNIL.map(f=>f[0]);
+  const fPctQty = FUNIL.map(f=>totalQty>0?+(f[1]/totalQty*100).toFixed(1):0);
+  const fPctBruto = FUNIL.map(f=>totalBruto>0?+(f[2]/totalBruto*100).toFixed(1):0);
+  const fColors = fLabels.map(l=>fc(C.funil,l));
+
+  if(cConvFunil) cConvFunil.destroy();
+  cConvFunil = new Chart(document.getElementById('chartConvFunil'), {
+    type:'bar', data:{labels:fLabels, datasets:[
+      {label:'% Vendas (Qty)',data:fPctQty,backgroundColor:fColors.map(c=>c+'80'),borderColor:fColors,borderWidth:1,borderRadius:3},
+      {label:'% Faturamento',data:fPctBruto,backgroundColor:fColors.map(c=>c+'40'),borderColor:fColors,borderWidth:1,borderRadius:3,borderDash:[3,3]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{font:{size:9}}}},
+      plugins:{tooltip:{backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+        callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw+'%'}
+      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+
+  // 2. Conversão Mensal - Leads -> Vendas trend
+  const ld = getFilteredLeads();
+  const monthMapConv = {};
+  ld.forEach(l=>{
+    const mo=leadsMonth(l[0]);
+    if(!monthMapConv[mo])monthMapConv[mo]={leads:0,oferta:0,pedLink:0,vendas:0};
+    monthMapConv[mo].leads+=l[1];monthMapConv[mo].oferta+=l[2];
+    monthMapConv[mo].pedLink+=l[3];monthMapConv[mo].vendas+=l[4]+l[5];
+  });
+  const moKeys=Object.keys(monthMapConv).sort((a,b)=>+a-+b);
+  const moLabels=moKeys.map(m=>['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+m-1]+'/26');
+  const convLeadOferta=moKeys.map(m=>monthMapConv[m].leads>0?+(monthMapConv[m].oferta/monthMapConv[m].leads*100).toFixed(1):0);
+  const convOfertaLink=moKeys.map(m=>monthMapConv[m].oferta>0?+(monthMapConv[m].pedLink/monthMapConv[m].oferta*100).toFixed(1):0);
+  const convLinkVenda=moKeys.map(m=>monthMapConv[m].pedLink>0?+(monthMapConv[m].vendas/monthMapConv[m].pedLink*100).toFixed(1):0);
+  const convGeralMes=moKeys.map(m=>monthMapConv[m].leads>0?+(monthMapConv[m].vendas/monthMapConv[m].leads*100).toFixed(1):0);
+
+  if(cConvTrend) cConvTrend.destroy();
+  if(moKeys.length>0) {
+    cConvTrend = new Chart(document.getElementById('chartConvTrend'), {
+      type:'line', data:{labels:moLabels, datasets:[
+        {label:'Lead→Oferta %',data:convLeadOferta,borderColor:C.leads,backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:C.leads,borderWidth:2},
+        {label:'Oferta→Link %',data:convOfertaLink,borderColor:C.oferta,backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:C.oferta,borderWidth:2},
+        {label:'Link→Venda %',data:convLinkVenda,borderColor:'#77dd77',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#77dd77',borderWidth:2},
+        {label:'Geral (Lead→Venda) %',data:convGeralMes,borderColor:'#ffb347',backgroundColor:'rgba(255,179,71,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#ffb347',borderWidth:2.5}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false}}},
+        plugins:{tooltip:{backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+          callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw+'%'}
+        },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
+      }
+    });
+  }
+
+  // 3. Conversão por Equipe - % do total
+  const eqTotalQty = EQUIPE.reduce((s,e)=>s+e[1],0);
+  const eqTotalBruto = EQUIPE.reduce((s,e)=>s+e[2],0);
+  const eqLabels = EQUIPE.map(e=>e[0]);
+  const eqTM = EQUIPE.map(e=>e[1]>0?Math.round(e[2]/e[1]):0);
+  const eqPctQty = EQUIPE.map(e=>eqTotalQty>0?+(e[1]/eqTotalQty*100).toFixed(1):0);
+  const eqColors = eqLabels.map(e=>C.equipe[e]||'#888');
+
+  if(cConvEquipe) cConvEquipe.destroy();
+  cConvEquipe = new Chart(document.getElementById('chartConvEquipe'), {
+    type:'bar', data:{labels:eqLabels, datasets:[
+      {label:'% das Vendas',data:eqPctQty,backgroundColor:eqColors.map(c=>c+'80'),borderColor:eqColors,borderWidth:1,borderRadius:3,yAxisID:'y'},
+      {label:'Ticket Medio',data:eqTM,type:'line',borderColor:'#fff',backgroundColor:'transparent',pointRadius:4,pointBackgroundColor:'#fff',borderWidth:2,yAxisID:'y1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{
+        y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.04)'}},
+        y1:{position:'right',grid:{display:false},ticks:{callback:v=>'R$'+v,color:'#fff'}},
+        x:{grid:{display:false}}
+      },
+      plugins:{tooltip:{backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+        callbacks:{label:ctx=>ctx.datasetIndex===1?'TM: '+fmt(ctx.raw):ctx.dataset.label+': '+ctx.raw+'%'}
+      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+    }
+  });
+
+  // 4. Funil de Conversão - Leads Instagram (horizontal funnel)
+  const totalLeads = ld.reduce((s,l)=>s+l[1],0);
+  const totalOferta = ld.reduce((s,l)=>s+l[2],0);
+  const totalPedLink = ld.reduce((s,l)=>s+l[3],0);
+  const totalVDia = ld.reduce((s,l)=>s+l[4],0);
+  const totalVFup = ld.reduce((s,l)=>s+l[5],0);
+  const totalVendas = totalVDia + totalVFup;
+
+  if(cConvFunnel) cConvFunnel.destroy();
+  if(totalLeads>0) {
+    const funnelLabels = ['Leads','Na Oferta','Pediram Link','Vendas'];
+    const funnelData = [totalLeads,totalOferta,totalPedLink,totalVendas];
+    const funnelColors = [C.leads,C.oferta,C.pedLink,'#77dd77'];
+    const funnelPct = funnelData.map(v=>+(v/totalLeads*100).toFixed(1));
+
+    cConvFunnel = new Chart(document.getElementById('chartConvFunnel'), {
+      type:'bar', data:{labels:funnelLabels, datasets:[{
+        label:'Quantidade',data:funnelData,
+        backgroundColor:funnelColors.map(c=>c+'70'),borderColor:funnelColors,borderWidth:2,borderRadius:4
+      }]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        scales:{x:{grid:{color:'rgba(255,255,255,.04)'}},y:{grid:{display:false}}},
+        plugins:{
+          legend:{display:false},
+          tooltip:{backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+            callbacks:{label:ctx=>{const pct=funnelPct[ctx.dataIndex];return fmtInt(ctx.raw)+' ('+pct+'% dos leads)';}}
+          },
+          datalabels:{display:true,color:'#fff',font:{weight:'bold',size:11},anchor:'end',align:'start',offset:8,
+            formatter:(v,ctx)=>{const pct=funnelPct[ctx.dataIndex];return fmtInt(v)+' ('+pct+'%)';}}
+        }
+      }
+    });
+  }
+}
+
 // --- Resumo Mensal Table (responds to funil/vd filters) ---
 function renderResumo() {
   const reembs = getFilteredReemb();
@@ -1258,8 +1528,10 @@ function renderResumo() {
 // RENDER ALL
 // ============================================================
 function renderAll() {
+  recomputeAggregates();
   renderKPIs();
   renderChartFat();
+  renderChartDaily();
   renderChartReemb();
   renderFunil();
   renderChartVDMes();
@@ -1277,6 +1549,7 @@ function renderAll() {
   renderLeads();
   renderConvComercial();
   renderConvLancMeteo();
+  renderConvComparison();
   renderResumo();
 }
 

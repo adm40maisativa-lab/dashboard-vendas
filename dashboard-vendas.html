@@ -195,22 +195,16 @@ if(sessionStorage.getItem('dash_auth')==='1') {
 <!-- KPI ROW -->
 <div class="kpi-row" id="kpiRow"></div>
 
-<!-- SECTION 1: Faturamento -->
-<div class="section-title">Faturamento</div>
+<!-- SECTION 1: Vendas Diarias -->
+<div class="section-title">Vendas Diarias</div>
+<div class="panel" style="margin-bottom:12px"><div class="panel-title">Faturamento Bruto por Dia (por Funil)</div><div class="chart-container chart-lg"><canvas id="chartDailyFunil"></canvas></div></div>
+
+<!-- SECTION 2: Faturamento por Funil -->
+<div class="section-title">Faturamento por Funil</div>
 <div class="grid-2">
-  <div class="panel"><div class="panel-title">Faturamento Mensal (Bruto vs Liquido)</div><div class="chart-container chart-md"><canvas id="chartFat"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Faturamento Mensal por Funil (Bruto + Qtd + TM)</div><div class="chart-container chart-md"><canvas id="chartFunilMonthly"></canvas></div></div>
   <div class="panel"><div class="panel-title">Reembolsos por Mes (com Taxa %)</div><div class="chart-container chart-md"><canvas id="chartReemb"></canvas></div></div>
 </div>
-
-<!-- SECTION: Faturamento Diario -->
-<div class="section-title">Faturamento Diario</div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">Faturamento por Dia (Bruto vs Liquido)</div><div class="chart-container chart-md"><canvas id="chartDaily"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Vendas por Dia (quantidade)</div><div class="chart-container chart-md"><canvas id="chartDailyQty"></canvas></div></div>
-</div>
-
-<!-- SECTION 2: Funil de Vendas -->
-<div class="section-title">Funil de Vendas</div>
 <div class="grid-2">
   <div class="panel"><div class="panel-title">Performance por Funil</div><table id="tblFunil"></table></div>
   <div class="panel"><div class="panel-title">Distribuicao por Funil</div><div class="chart-container chart-md"><canvas id="chartFunil"></canvas></div></div>
@@ -220,7 +214,49 @@ if(sessionStorage.getItem('dash_auth')==='1') {
   <div class="panel"><div class="panel-title">Faturamento por Funil (mensal - empilhado)</div><div class="chart-container chart-md"><canvas id="chartFunilMes"></canvas></div></div>
 </div>
 
-<!-- SECTION 3: Produtos & Ticket Medio -->
+<!-- SECTION 3: Renovacao -->
+<div class="section-title">Taxa de Renovacao</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Status das Alunas</div><div class="chart-container chart-sm"><canvas id="chartStatus"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Renovacoes por Mes</div><div class="chart-container chart-md"><canvas id="chartRenov"></canvas></div></div>
+</div>
+
+<!-- SECTION 4: Conversao & Leads -->
+<div class="section-title">Funil de Leads & Conversao</div>
+<div class="panel" style="margin-bottom:12px">
+  <div class="panel-title">Resumo de Conversao - Leads Instagram</div>
+  <div id="leadsKpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;"></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Evolucao Diaria de Leads</div><div class="chart-container chart-md"><canvas id="chartLeads"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Vendas por Tipo (Dia vs Follow-up)</div><div class="chart-container chart-md"><canvas id="chartLeadsVendas"></canvas></div></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Taxa de Conversao por Funil (Vendas vs Total)</div><div class="chart-container chart-md"><canvas id="chartConvFunil"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Conversao Mensal - Leads a Vendas (%)</div><div class="chart-container chart-md"><canvas id="chartConvTrend"></canvas></div></div>
+</div>
+<div class="panel" style="margin-bottom:12px">
+  <div class="panel-title">Conversao Comercial - WebFit vs Leads</div>
+  <div id="convComercial" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+</div>
+<div class="panel" style="margin-bottom:12px">
+  <div class="panel-title">Conversao Lancamento/Meteorico vs Leads Captados</div>
+  <div id="convLancMeteo" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Conversao por Equipe (% do Total)</div><div class="chart-container chart-md"><canvas id="chartConvEquipe"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Funil de Conversao - Leads Instagram</div><div class="chart-container chart-md"><canvas id="chartConvFunnel"></canvas></div></div>
+</div>
+<div class="grid-2">
+  <div class="panel"><div class="panel-title">Funil de Conversao Mensal (Leads)</div><div class="chart-container chart-md"><canvas id="chartLeadsMensal"></canvas></div></div>
+  <div class="panel"><div class="panel-title">Timeline Mensal - Leads (area empilhada)</div><div class="chart-container chart-md"><canvas id="chartLeadsArea"></canvas></div></div>
+</div>
+
+<!-- SECTION 5: Resumo Mensal -->
+<div class="section-title">Resumo Mensal</div>
+<div class="panel"><table id="tblResumo"></table></div>
+
+<!-- SECTION 6: Detalhes - Produtos -->
 <div class="section-title">Produtos & Ticket Medio</div>
 <div class="grid-2">
   <div class="panel"><div class="panel-title">Produto Simplificado</div><table id="tblProduto"></table></div>
@@ -231,7 +267,7 @@ if(sessionStorage.getItem('dash_auth')==='1') {
   <div class="panel"><div class="panel-title">Metodo de Pagamento</div><table id="tblMetodo"></table></div>
 </div>
 
-<!-- SECTION 4: Equipe & Links -->
+<!-- SECTION 7: Equipe & Links -->
 <div class="section-title">Equipe de Vendas & Links</div>
 <div class="grid-2">
   <div class="panel"><div class="panel-title">Performance por Equipe</div><table id="tblEquipe"></table></div>
@@ -242,51 +278,6 @@ if(sessionStorage.getItem('dash_auth')==='1') {
   <div class="panel"><div class="panel-title">Equipe x Link (detalhado)</div><div class="chart-container chart-lg"><canvas id="chartEquipeLink"></canvas></div></div>
 </div>
 <div class="panel" style="margin-bottom:12px"><div class="panel-title">Faturamento por Equipe (mensal)</div><div class="chart-container chart-md"><canvas id="chartEquipeMes"></canvas></div></div>
-
-<!-- SECTION 5: Renovacao -->
-<div class="section-title">Taxa de Renovacao</div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">Status das Alunas</div><div class="chart-container chart-sm"><canvas id="chartStatus"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Renovacoes por Mes</div><div class="chart-container chart-md"><canvas id="chartRenov"></canvas></div></div>
-</div>
-
-<!-- SECTION 6: Leads Instagram -->
-<div class="section-title">Funil de Leads Instagram</div>
-<div class="panel" style="margin-bottom:12px">
-  <div class="panel-title">Resumo de Conversao - Leads Instagram (Jan-Mar 2026)</div>
-  <div id="leadsKpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;"></div>
-</div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">Evolucao Diaria de Leads</div><div class="chart-container chart-md"><canvas id="chartLeads"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Vendas por Tipo (Dia vs Follow-up)</div><div class="chart-container chart-md"><canvas id="chartLeadsVendas"></canvas></div></div>
-</div>
-<div class="panel" style="margin-bottom:12px">
-  <div class="panel-title">Conversão Comercial - WebFit vs Leads (Jan-Mar 2026)</div>
-  <div id="convComercial" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
-</div>
-<div class="panel" style="margin-bottom:12px">
-  <div class="panel-title">Conversão Lançamento/Meteórico vs Leads Captados</div>
-  <div id="convLancMeteo" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
-</div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">Funil de Conversão Mensal (Leads)</div><div class="chart-container chart-md"><canvas id="chartLeadsMensal"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Timeline Mensal - Leads (área empilhada)</div><div class="chart-container chart-md"><canvas id="chartLeadsArea"></canvas></div></div>
-</div>
-
-<!-- SECTION: Comparativo de Conversoes -->
-<div class="section-title">Comparativo de Conversoes</div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">Taxa de Conversao por Funil (Vendas vs Total)</div><div class="chart-container chart-md"><canvas id="chartConvFunil"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Conversao Mensal - Leads a Vendas (%)</div><div class="chart-container chart-md"><canvas id="chartConvTrend"></canvas></div></div>
-</div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">Conversao por Equipe (% do Total)</div><div class="chart-container chart-md"><canvas id="chartConvEquipe"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Funil de Conversao - Leads Instagram</div><div class="chart-container chart-md"><canvas id="chartConvFunnel"></canvas></div></div>
-</div>
-
-<!-- SECTION 7: Resumo Mensal -->
-<div class="section-title">Resumo Mensal</div>
-<div class="panel"><table id="tblResumo"></table></div>
 
 <div class="footer" id="footerText">Dashboard com dados em tempo real do Google Sheets | Carregando...</div>
 </div>
@@ -683,6 +674,7 @@ function getFilteredLeads() {
 // ============================================================
 // DYNAMIC AGGREGATE RECOMPUTATION (responds to ALL filters)
 // ============================================================
+// Full filter (time + funil + vd) → for summary aggregates
 function getFilteredRaw() {
   let data = RAW_ALL;
   data = data.filter(r => matchesTimePeriod(r.ano, r.mes));
@@ -690,11 +682,63 @@ function getFilteredRaw() {
   if(filterState.vd!=='all') data = data.filter(r => r.vd === filterState.vd);
   return data;
 }
+// Content filter only (funil + vd) → for time-series that apply time at render
+function getContentFilteredRaw() {
+  let data = RAW_ALL;
+  if(filterState.funil!=='all') data = data.filter(r => r.funil === filterState.funil);
+  if(filterState.vd!=='all') data = data.filter(r => r.vd === filterState.vd);
+  return data;
+}
+
+let DAILY_FUNIL=[]; // [ano,mes,dia,funil,vendas,bruto]
 
 function recomputeAggregates() {
   const filtered = getFilteredRaw();
+  const contentFiltered = getContentFilteredRaw();
   const eqOrd=['40+Ativa','WebFit','Giva','MasterIA'];
   const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
+
+  // ── Time-series (content-filtered, time applied at render) ──
+
+  // MONTHLY [ano,mes,vendas,bruto,liquido]
+  const mm={};
+  contentFiltered.forEach(r=>{const k=r.ano+'-'+r.mes;if(!mm[k])mm[k]={a:r.ano,m:r.mes,q:0,b:0,l:0};mm[k].q++;mm[k].b+=r.bruto;mm[k].l+=r.liquido;});
+  MONTHLY=Object.values(mm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // REEMB [ano,mes,qtd,valor]
+  const reemb=contentFiltered.filter(r=>r.status==='Reembolsado');
+  const rm={};
+  reemb.forEach(r=>{const k=r.ano+'-'+r.mes;if(!rm[k])rm[k]={a:r.ano,m:r.mes,q:0,v:0};rm[k].q++;rm[k].v+=r.reemb;});
+  REEMB=Object.values(rm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q,Math.round(v.v)]);
+
+  // FUNIL_MES [funil,ano,mes,vendas,bruto,liquido]
+  const fmm={};
+  contentFiltered.forEach(r=>{if(!r.funil)return;const k=r.funil+'-'+r.ano+'-'+r.mes;if(!fmm[k])fmm[k]={f:r.funil,a:r.ano,m:r.mes,q:0,b:0,l:0};fmm[k].q++;fmm[k].b+=r.bruto;fmm[k].l+=r.liquido;});
+  FUNIL_MES=Object.values(fmm).sort((a,b)=>a.f.localeCompare(b.f)||a.a-b.a||a.m-b.m).map(v=>[v.f,v.a,v.m,v.q,v.b,v.l]);
+
+  // EQUIPE_MES [equipe,ano,mes,vendas,bruto,liquido]
+  const emm={};
+  contentFiltered.forEach(r=>{if(!r.equipe)return;const k=r.equipe+'-'+r.ano+'-'+r.mes;if(!emm[k])emm[k]={e:r.equipe,a:r.ano,m:r.mes,q:0,b:0,l:0};emm[k].q++;emm[k].b+=r.bruto;emm[k].l+=r.liquido;});
+  EQUIPE_MES=Object.values(emm).sort((a,b)=>{const ei=(eqOrd.indexOf(a.e)===-1?99:eqOrd.indexOf(a.e))-(eqOrd.indexOf(b.e)===-1?99:eqOrd.indexOf(b.e));return ei!==0?ei:a.a-b.a||a.m-b.m;}).map(v=>[v.e,v.a,v.m,v.q,v.b,v.l]);
+
+  // VD_MES [ano-mes,vd,vendas,bruto,liquido]
+  const vdm={};
+  contentFiltered.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)'&&r.vd&&r.vd!=='N/A').forEach(r=>{
+    const ym=r.ano+'-'+String(r.mes).padStart(2,'0');const k=ym+'-'+r.vd;
+    if(!vdm[k])vdm[k]={ym,vd:r.vd,q:0,b:0,l:0};vdm[k].q++;vdm[k].b+=r.bruto;vdm[k].l+=r.liquido;
+  });
+  VD_MES=Object.values(vdm).sort((a,b)=>a.ym.localeCompare(b.ym)||a.vd.localeCompare(b.vd)).map(v=>[v.ym,v.vd,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // RENOV_MES [ano,mes,qtdRenovada]
+  const pagaCF=contentFiltered.filter(r=>r.status==='Paga');
+  const rnm={};
+  const renovRows=pagaCF.filter(r=>r.detalheRenov&&r.detalheRenov!=='N/A');
+  (renovRows.length>0?renovRows:pagaCF.filter(r=>norm(r.funil)==='Renovacao')).forEach(r=>{
+    const k=r.ano+'-'+r.mes;if(!rnm[k])rnm[k]={a:r.ano,m:r.mes,q:0};rnm[k].q++;
+  });
+  RENOV_MES=Object.values(rnm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q]);
+
+  // ── Summary aggregates (fully filtered: time + funil + vd) ──
 
   // PRODUTO
   const pm={};
@@ -736,7 +780,7 @@ function recomputeAggregates() {
   const mtOrd=['Credito','Pix','Boleto','Transferencia','Paypal'];
   METODO=mtOrd.filter(m=>mtm[m]).map(m=>mtm[m]).concat(Object.values(mtm).filter(v=>!mtOrd.includes(v.n))).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
-  // VD_TOTALS (filtered)
+  // VD_TOTALS
   VD_TOTALS={};
   filtered.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)').forEach(r=>{
     const vd=r.vd||'N/A';if(!VD_TOTALS[vd])VD_TOTALS[vd]={qty:0,bruto:0,liquido:0};
@@ -753,6 +797,17 @@ function recomputeAggregates() {
     dm[k].q++;dm[k].b+=r.bruto;dm[k].l+=r.liquido;
   });
   DAILY=Object.values(dm).sort((a,b)=>a.a-b.a||a.m-b.m||a.d-b.d).map(v=>[v.a,v.m,v.d,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // DAILY_FUNIL [dateKey, funil, vendas, bruto]
+  const dfm={};
+  filtered.forEach(r=>{
+    if(!r.dia||!r.funil)return;
+    const dk=String(r.dia).padStart(2,'0')+'/'+String(r.mes).padStart(2,'0');
+    const k=r.ano+'-'+String(r.mes).padStart(2,'0')+'-'+String(r.dia).padStart(2,'0')+'||'+r.funil;
+    if(!dfm[k])dfm[k]={dk,sk:r.ano+'-'+String(r.mes).padStart(2,'0')+'-'+String(r.dia).padStart(2,'0'),f:r.funil,q:0,b:0};
+    dfm[k].q++;dfm[k].b+=r.bruto;
+  });
+  DAILY_FUNIL=Object.values(dfm).sort((a,b)=>a.sk.localeCompare(b.sk)||a.f.localeCompare(b.f));
 }
 
 // ============================================================
@@ -827,37 +882,85 @@ function renderKPIs() {
   `;
 }
 
-// --- Faturamento Chart (responds to funil/vd filters) ---
-let cFat;
-function renderChartFat() {
-  let labels, brutoData, liqData;
-  if(filterState.funil!=='all') {
-    const d = getFilteredFunilMesData();
-    const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
-    labels = months.map(m=>{const [a,mo]=m.split('-');return mesLabel(+a,+mo);});
-    brutoData = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[4],0);});
-    liqData = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[5],0);});
-  } else if(filterState.vd!=='all') {
-    const d = getFilteredVDMes();
-    const months = [...new Set(d.map(r=>r[0]))].sort();
-    labels = months.map(m=>{const [a,mo]=m.split('-');return mesLabel(+a,+mo);});
-    brutoData = months.map(m=>d.filter(r=>r[0]===m).reduce((s,r)=>s+r[3],0));
-    liqData = months.map(m=>d.filter(r=>r[0]===m).reduce((s,r)=>s+r[4],0));
-  } else {
-    const m = getFilteredMonths();
-    labels = m.map(d=>mesLabel(d[0],d[1]));
-    brutoData = m.map(d=>d[3]);
-    liqData = m.map(d=>d[4]);
-  }
-  if(cFat) cFat.destroy();
-  cFat = new Chart(document.getElementById('chartFat'), {
-    type:'bar', data:{ labels, datasets:[
-      {label:'Bruto',data:brutoData,backgroundColor:'rgba(236,42,181,.45)',borderColor:C.bruto,borderWidth:1,borderRadius:3,order:2},
-      {label:'Líquido',data:liqData,backgroundColor:'rgba(0,212,255,.4)',borderColor:C.liquido,borderWidth:1,borderRadius:3,order:3}
-    ]},
+// --- Daily Funil Stacked Chart ---
+let cDailyFunil;
+function renderChartDailyFunil() {
+  const d = DAILY_FUNIL;
+  if(d.length===0){if(cDailyFunil){cDailyFunil.destroy();cDailyFunil=null;}return;}
+  const days = [...new Set(d.map(r=>r.sk))].sort();
+  const labels = days.map(sk=>{const p=sk.split('-');return p[2]+'/'+p[1];});
+  const funis = [...new Set(d.map(r=>r.f))];
+  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
+  funis.sort((a,b)=>{const ia=funilOrd.indexOf(norm(a)),ib=funilOrd.indexOf(norm(b));return (ia===-1?99:ia)-(ib===-1?99:ib);});
+
+  const datasets = funis.map(funil=>({
+    label:funil,
+    data:days.map(sk=>{const row=d.find(r=>r.sk===sk&&r.f===funil);return row?Math.round(row.b):0;}),
+    backgroundColor:fc(C.funil,funil)+'70',
+    borderColor:fc(C.funil,funil),
+    borderWidth:1,borderRadius:2
+  }));
+
+  // Media movel 7d do total
+  const totals = days.map(sk=>Math.round(d.filter(r=>r.sk===sk).reduce((s,r)=>s+r.b,0)));
+  const ma7 = totals.map((_,i)=>{const start=Math.max(0,i-6);const sl=totals.slice(start,i+1);return Math.round(sl.reduce((s,v)=>s+v,0)/sl.length);});
+  datasets.push({label:'Media 7d',data:ma7,type:'line',borderColor:'#fff',backgroundColor:'transparent',pointRadius:0,borderWidth:2,borderDash:[4,4],order:0});
+
+  if(cDailyFunil) cDailyFunil.destroy();
+  cDailyFunil = new Chart(document.getElementById('chartDailyFunil'), {
+    type:'bar', data:{labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false}}},
-      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
+      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
+      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
+    }
+  });
+}
+
+// --- Funil Monthly Chart (like Reembolsos: bars per funil + line qty + line TM) ---
+let cFunilMonthly;
+function renderChartFunilMonthly() {
+  const d = filterFunilMes(FUNIL_MES);
+  const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
+  const labels = months.map(m=>{const [a,mo]=m.split('-');return mesLabel(+a,+mo);});
+  const funis = [...new Set(d.map(r=>r[0]))];
+  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
+  funis.sort((a,b)=>{const ia=funilOrd.indexOf(norm(a)),ib=funilOrd.indexOf(norm(b));return (ia===-1?99:ia)-(ib===-1?99:ib);});
+
+  const datasets = funis.map(funil=>({
+    label:funil,
+    data:months.map(m=>{const [a,mo]=m.split('-');const rows=d.filter(r=>r[0]===funil&&r[1]==+a&&r[2]==+mo);return rows.reduce((s,r)=>s+r[4],0);}),
+    backgroundColor:fc(C.funil,funil)+'60',
+    borderColor:fc(C.funil,funil),
+    borderWidth:1,borderRadius:3,yAxisID:'y'
+  }));
+
+  // Linha de quantidade total por mes
+  const qtyData = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[3],0);});
+  datasets.push({label:'Qtd Vendas',data:qtyData,type:'line',borderColor:'#fff',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#fff',borderWidth:2,yAxisID:'y1',order:0});
+
+  // Linha de ticket medio por mes
+  const brutoTotal = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[4],0);});
+  const tmData = months.map((_,i)=>qtyData[i]>0?Math.round(brutoTotal[i]/qtyData[i]):0);
+  datasets.push({label:'Ticket Medio',data:tmData,type:'line',borderColor:'#ffb347',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#ffb347',borderWidth:2,borderDash:[4,4],yAxisID:'y2',order:0});
+
+  if(cFunilMonthly) cFunilMonthly.destroy();
+  cFunilMonthly = new Chart(document.getElementById('chartFunilMonthly'), {
+    type:'bar', data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{
+        y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},
+        y1:{position:'right',grid:{display:false},ticks:{stepSize:10,color:'#fff'}},
+        y2:{position:'right',grid:{display:false},ticks:{callback:v=>'R$'+v,color:'#ffb347'},display:false},
+        x:{stacked:true,grid:{display:false}}
+      },
+      plugins:{tooltip:{
+        backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
+        callbacks:{label:ctx=>{
+          if(ctx.dataset.label==='Ticket Medio')return 'TM: '+fmt(ctx.raw);
+          if(ctx.dataset.label==='Qtd Vendas')return 'Qtd: '+fmtN(ctx.raw);
+          return ctx.dataset.label+': '+fmtK(ctx.raw);
+        }}
+      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
     }
   });
 }
@@ -1309,55 +1412,7 @@ function renderConvLancMeteo() {
   document.getElementById('convLancMeteo').innerHTML = html;
 }
 
-// --- Daily Charts ---
-let cDaily, cDailyQty;
-function renderChartDaily() {
-  const d = DAILY;
-  if(d.length===0){if(cDaily){cDaily.destroy();cDaily=null;}if(cDailyQty){cDailyQty.destroy();cDailyQty=null;}return;}
-  const labels = d.map(r=>String(r[2]).padStart(2,'0')+'/'+String(r[1]).padStart(2,'0'));
-  const brutoData = d.map(r=>r[4]);
-  const liqData = d.map(r=>r[5]);
-  const qtyData = d.map(r=>r[3]);
-
-  // Média móvel 7 dias para bruto
-  const ma7 = brutoData.map((_,i)=>{
-    const start=Math.max(0,i-6);
-    const slice=brutoData.slice(start,i+1);
-    return Math.round(slice.reduce((s,v)=>s+v,0)/slice.length);
-  });
-
-  if(cDaily) cDaily.destroy();
-  cDaily = new Chart(document.getElementById('chartDaily'), {
-    type:'bar', data:{labels, datasets:[
-      {label:'Bruto',data:brutoData,backgroundColor:'rgba(236,42,181,.35)',borderColor:C.bruto,borderWidth:1,borderRadius:2,order:2},
-      {label:'Liquido',data:liqData,backgroundColor:'rgba(0,212,255,.3)',borderColor:C.liquido,borderWidth:1,borderRadius:2,order:3},
-      {label:'Media 7d (Bruto)',data:ma7,type:'line',borderColor:'#ffb347',backgroundColor:'transparent',pointRadius:0,borderWidth:2,borderDash:[4,4],order:1}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:20,font:{size:9}}}},
-      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
-    }
-  });
-
-  // Quantidade diária
-  const ma7q = qtyData.map((_,i)=>{
-    const start=Math.max(0,i-6);
-    const slice=qtyData.slice(start,i+1);
-    return +(slice.reduce((s,v)=>s+v,0)/slice.length).toFixed(1);
-  });
-
-  if(cDailyQty) cDailyQty.destroy();
-  cDailyQty = new Chart(document.getElementById('chartDailyQty'), {
-    type:'bar', data:{labels, datasets:[
-      {label:'Vendas/dia',data:qtyData,backgroundColor:'rgba(119,221,119,.4)',borderColor:'#77dd77',borderWidth:1,borderRadius:2,order:2},
-      {label:'Media 7d',data:ma7q,type:'line',borderColor:'#ec2ab5',backgroundColor:'transparent',pointRadius:0,borderWidth:2,order:1}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:20,font:{size:9}}}},
-      plugins:{tooltip:tooltipStyleInt,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
-    }
-  });
-}
+// (renderChartDaily removed — replaced by renderChartDailyFunil)
 
 // --- Conversion Comparison Charts ---
 let cConvFunil, cConvTrend, cConvEquipe, cConvFunnel;
@@ -1486,19 +1541,8 @@ function renderResumo() {
   const t = document.getElementById('tblResumo');
   let html = `<tr><th>Mês</th><th class="num">Fat. Bruto</th><th class="num">Fat. Líquido</th><th class="num">Vendas</th><th class="num">TM</th><th class="num">TM Líquido</th><th class="num">Reembolsos</th><th class="num">Taxa Reemb.</th><th class="num">Taxa Eduzz</th><th class="num">Parceiro</th></tr>`;
 
-  // Build monthly rows based on active filter
-  let monthRows;
-  if(filterState.funil!=='all') {
-    const d = getFilteredFunilMesData();
-    const keys = [...new Set(d.map(r=>r[1]+'-'+r[2]))].sort((a,b)=>{const [a1,a2]=a.split('-').map(Number);const [b1,b2]=b.split('-').map(Number);return a1-b1||a2-b2;});
-    monthRows = keys.map(k=>{const [a,m]=k.split('-').map(Number);const rows=d.filter(r=>r[1]===a&&r[2]===m);return [a,m,rows.reduce((s,r)=>s+r[3],0),rows.reduce((s,r)=>s+r[4],0),rows.reduce((s,r)=>s+r[5],0)];});
-  } else if(filterState.vd!=='all') {
-    const d = getFilteredVDMes();
-    const keys = [...new Set(d.map(r=>r[0]))].sort();
-    monthRows = keys.map(k=>{const [a,m]=k.split('-').map(Number);const rows=d.filter(r=>r[0]===k);return [a,m,rows.reduce((s,r)=>s+r[2],0),rows.reduce((s,r)=>s+r[3],0),rows.reduce((s,r)=>s+r[4],0)];});
-  } else {
-    monthRows = getFilteredMonths().map(m=>[m[0],m[1],m[2],m[3],m[4]]);
-  }
+  // MONTHLY is already recomputed with funil/vd filters by recomputeAggregates
+  const monthRows = getFilteredMonths().map(m=>[m[0],m[1],m[2],m[3],m[4]]);
 
   let sumB=0,sumL=0,sumQ=0,sumR=0,sumRQ=0;
   monthRows.forEach(m => {
@@ -1524,27 +1568,34 @@ function renderResumo() {
 function renderAll() {
   recomputeAggregates();
   renderKPIs();
-  renderChartFat();
-  renderChartDaily();
+  // S1: Vendas Diarias
+  renderChartDailyFunil();
+  // S2: Faturamento por Funil
+  renderChartFunilMonthly();
   renderChartReemb();
   renderFunil();
   renderChartVDMes();
   renderChartFunilMes();
+  // S3: Renovacao
+  renderStatus();
+  renderRenov();
+  // S4: Conversao & Leads
+  renderLeads();
+  renderConvComparison();
+  renderConvComercial();
+  renderConvLancMeteo();
+  // S5: Resumo Mensal
+  renderResumo();
+  // S6: Detalhes - Produtos
   renderProduto();
   renderAcesso();
   renderMetodo();
+  // S7: Equipe & Links
   renderEquipe();
   renderRadarEquipe();
   renderLinkHBar();
   renderEquipeLink();
   renderChartEquipeMes();
-  renderStatus();
-  renderRenov();
-  renderLeads();
-  renderConvComercial();
-  renderConvLancMeteo();
-  renderConvComparison();
-  renderResumo();
 }
 
 // ============================================================

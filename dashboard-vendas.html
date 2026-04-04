@@ -910,7 +910,7 @@ function renderChartDailyFunil() {
   cDailyFunil = new Chart(document.getElementById('chartDailyFunil'), {
     type:'bar', data:{labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
+      scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
       plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
     }
   });

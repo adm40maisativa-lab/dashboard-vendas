@@ -820,6 +820,22 @@ Chart.defaults.font.size = 11;
 Chart.register(ChartDataLabels);
 Chart.defaults.plugins.datalabels = { display: false };
 
+// Legend click: show ONLY clicked dataset (toggle back to all if already solo)
+Chart.defaults.plugins.legend.onClick = function(e, legendItem, legend) {
+  const chart = legend.chart;
+  const ci = legendItem.datasetIndex;
+  const meta = chart.getDatasetMeta(ci);
+  const allHidden = chart.data.datasets.every((ds,i) => i===ci ? false : chart.getDatasetMeta(i).hidden);
+  if(allHidden) {
+    // Already solo — show all
+    chart.data.datasets.forEach((_,i) => { chart.getDatasetMeta(i).hidden = false; });
+  } else {
+    // Solo this one — hide all others
+    chart.data.datasets.forEach((_,i) => { chart.getDatasetMeta(i).hidden = (i !== ci); });
+  }
+  chart.update();
+};
+
 const tooltipStyle = {
   backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',
   borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,

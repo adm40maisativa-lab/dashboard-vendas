@@ -890,15 +890,18 @@ function renderChartDailyFunil() {
   const days = [...new Set(d.map(r=>r.sk))].sort();
   const labels = days.map(sk=>{const p=sk.split('-');return p[2]+'/'+p[1];});
   const funis = [...new Set(d.map(r=>r.f))];
-  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
-  funis.sort((a,b)=>{const ia=funilOrd.indexOf(norm(a)),ib=funilOrd.indexOf(norm(b));return (ia===-1?99:ia)-(ib===-1?99:ib);});
+  // Sort funis by total bruto DESC — largest goes first (bottom of stack)
+  const funilTotals = {};
+  d.forEach(r=>{funilTotals[r.f]=(funilTotals[r.f]||0)+r.b;});
+  funis.sort((a,b)=>(funilTotals[b]||0)-(funilTotals[a]||0));
 
-  const datasets = funis.map(funil=>({
+  const datasets = funis.map((funil,i)=>({
     label:funil,
     data:days.map(sk=>{const row=d.find(r=>r.sk===sk&&r.f===funil);return row?Math.round(row.b):0;}),
     backgroundColor:fc(C.funil,funil)+'70',
     borderColor:fc(C.funil,funil),
-    borderWidth:1,borderRadius:2
+    borderWidth:1,borderRadius:0,
+    order:funis.length-i // largest funil gets highest order = drawn first (bottom)
   }));
 
   // Media movel 7d do total
@@ -910,7 +913,7 @@ function renderChartDailyFunil() {
   cDailyFunil = new Chart(document.getElementById('chartDailyFunil'), {
     type:'bar', data:{labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
+      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
       plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
     }
   });

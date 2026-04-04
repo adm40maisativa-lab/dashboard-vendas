@@ -823,15 +823,33 @@ Chart.defaults.plugins.datalabels = { display: false };
 // Legend click: show ONLY clicked dataset (toggle back to all if already solo)
 Chart.defaults.plugins.legend.onClick = function(e, legendItem, legend) {
   const chart = legend.chart;
+  const type = chart.config.type;
+
+  // Doughnut / Pie / PolarArea → toggle data point visibility
+  if(type==='doughnut'||type==='pie'||type==='polarArea') {
+    const idx = legendItem.index;
+    const total = chart.data.datasets[0].data.length;
+    const othersHidden = [...Array(total)].every((_,i) => i===idx || !chart.getDataVisibility(i));
+    if(othersHidden) {
+      for(let i=0;i<total;i++) if(!chart.getDataVisibility(i)) chart.toggleDataVisibility(i);
+    } else {
+      for(let i=0;i<total;i++){
+        if(i===idx && !chart.getDataVisibility(i)) chart.toggleDataVisibility(i);
+        if(i!==idx && chart.getDataVisibility(i)) chart.toggleDataVisibility(i);
+      }
+    }
+    chart.update();
+    return;
+  }
+
+  // Bar / Line / Radar → toggle dataset visibility
   const ci = legendItem.datasetIndex;
-  const meta = chart.getDatasetMeta(ci);
-  const allHidden = chart.data.datasets.every((ds,i) => i===ci ? false : chart.getDatasetMeta(i).hidden);
-  if(allHidden) {
-    // Already solo — show all
-    chart.data.datasets.forEach((_,i) => { chart.getDatasetMeta(i).hidden = false; });
+  const total = chart.data.datasets.length;
+  const othersHidden = [...Array(total)].every((_,i) => i===ci || !!chart.getDatasetMeta(i).hidden);
+  if(othersHidden) {
+    for(let i=0;i<total;i++) chart.getDatasetMeta(i).hidden = null;
   } else {
-    // Solo this one — hide all others
-    chart.data.datasets.forEach((_,i) => { chart.getDatasetMeta(i).hidden = (i !== ci); });
+    for(let i=0;i<total;i++) chart.getDatasetMeta(i).hidden = i===ci ? null : true;
   }
   chart.update();
 };
@@ -924,7 +942,7 @@ function renderChartDailyFunil() {
   cDailyFunil = new Chart(document.getElementById('chartDailyFunil'), {
     type:'bar', data:{labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
+      scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
       plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
     }
   });

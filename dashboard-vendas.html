@@ -898,16 +898,11 @@ function renderChartDailyFunil() {
   const datasets = funis.map((funil,i)=>({
     label:funil,
     data:days.map(sk=>{const row=d.find(r=>r.sk===sk&&r.f===funil);return row?Math.round(row.b):0;}),
-    backgroundColor:fc(C.funil,funil)+'70',
+    backgroundColor:fc(C.funil,funil),
     borderColor:fc(C.funil,funil),
     borderWidth:1,borderRadius:0,
-    order:funis.length-i // largest funil gets highest order = drawn first (bottom)
+    order:funis.length-i
   }));
-
-  // Media movel 7d do total
-  const totals = days.map(sk=>Math.round(d.filter(r=>r.sk===sk).reduce((s,r)=>s+r.b,0)));
-  const ma7 = totals.map((_,i)=>{const start=Math.max(0,i-6);const sl=totals.slice(start,i+1);return Math.round(sl.reduce((s,v)=>s+v,0)/sl.length);});
-  datasets.push({label:'Media 7d',data:ma7,type:'line',borderColor:'#fff',backgroundColor:'transparent',pointRadius:0,borderWidth:2,borderDash:[4,4],order:0});
 
   if(cDailyFunil) cDailyFunil.destroy();
   cDailyFunil = new Chart(document.getElementById('chartDailyFunil'), {

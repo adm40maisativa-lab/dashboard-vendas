@@ -598,7 +598,20 @@ function initFilters() {
   document.getElementById('fFunil').addEventListener('change', e => { filterState.funil=e.target.value; renderAll(); });
   document.getElementById('fVD').addEventListener('change', e => { filterState.vd=e.target.value; renderAll(); });
 
-  updateCascade();
+  // Default: filtrar pelo mês atual
+  const now=new Date();
+  const curAno=now.getFullYear().toString();
+  const curMes=now.getMonth()+1;
+  if([...fAno.options].some(o=>o.value===curAno)){
+    fAno.value=curAno; filterState.ano=curAno;
+    updateCascade();
+    const fMes=document.getElementById('fMes');
+    if([...fMes.options].some(o=>o.value==curMes)){
+      fMes.value=curMes; filterState.mes=curMes.toString();
+    }
+  } else {
+    updateCascade();
+  }
 }
 
 function updateCascade() {

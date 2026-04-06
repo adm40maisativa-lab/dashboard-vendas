@@ -384,13 +384,15 @@ async function fetchSheetData(){
 function processVendas(rows){
   findColumns(rows[0]); // Dynamic header lookup
   const data=rows.slice(1);
-  const all=data.map(r=>({
-    status:ps(r[COL.status]),metodo:ps(r[COL.metodo]),bruto:pn(r[COL.valorItem]),reemb:pn(r[COL.valorReemb]),
+  const all=data.map(r=>{
+    let ano=pi(r[COL.ano]),mes=pi(r[COL.mes]),dia=pi(r[COL.dia]);
+    if(!ano&&r[COL.dataCriacao]){const p=ps(r[COL.dataCriacao]).split('/');if(p.length>=3){dia=parseInt(p[0])||0;mes=parseInt(p[1])||0;ano=parseInt(p[2])||0;}}
+    return{status:ps(r[COL.status]),metodo:ps(r[COL.metodo]),bruto:pn(r[COL.valorItem]),reemb:pn(r[COL.valorReemb]),
     liquido:pn(r[COL.ganhoLiq]),cliente:ps(r[COL.cliente]),produto:ps(r[COL.produto]),
-    ano:pi(r[COL.ano]),mes:pi(r[COL.mes]),dia:pi(r[COL.dia]),acesso:ps(r[COL.acesso]),
+    ano,mes,dia,acesso:ps(r[COL.acesso]),
     funil:ps(r[COL.funil]),detalheRenov:ps(r[COL.detalheRenov]),equipe:ps(r[COL.equipe]),
-    link:ps(r[COL.link]),vd:ps(r[COL.vd])
-  })).filter(r=>r.ano>0);
+    link:ps(r[COL.link]),vd:ps(r[COL.vd])};
+  }).filter(r=>r.ano>0);
   const paga=all.filter(r=>r.status==='Paga');
   const reembolsado=all.filter(r=>r.status==='Reembolsado');
 

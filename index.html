@@ -352,13 +352,14 @@ function pi(s){if(!s)return 0;s=s.replace(/["\s.]/g,'').trim();return parseInt(s
 // FETCH FROM GOOGLE SHEETS
 // ============================================================
 async function fetchSheetData(){
+  const cb=Date.now();
   const base=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
   const msg=document.getElementById('loadingMsg');
   try{
     if(msg)msg.textContent='Buscando dados da planilha...';
     const [vendasCSV,leadsCSV]=await Promise.all([
-      fetch(`${base}&gid=${GID_VENDAS}`).then(r=>{if(!r.ok)throw new Error('Vendas:'+r.status);return r.text();}),
-      fetch(`${base}&gid=${GID_LEADS}`).then(r=>{if(!r.ok)throw new Error('Leads:'+r.status);return r.text();})
+      fetch(`${base}&gid=${GID_VENDAS}&_=${cb}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Vendas:'+r.status);return r.text();}),
+      fetch(`${base}&gid=${GID_LEADS}&_=${cb}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Leads:'+r.status);return r.text();})
     ]);
     if(msg)msg.textContent='Processando dados...';
     processVendas(parseCSV(vendasCSV));
@@ -1639,11 +1640,13 @@ async function loadDashboard(){
     initFilters();
     renderAll();
     document.getElementById('loadingOverlay').style.display='none';
-    // Auto-refresh every 30 minutes
-    setInterval(async()=>{
-      const r=await fetchSheetData();
-      if(r){renderAll();}
-    },30*60*1000);
+    // Refresh when tab becomes visible again
+    document.addEventListener('visibilitychange',async()=>{
+      if(document.visibilityState==='visible'){
+        const r=await fetchSheetData();
+        if(r){renderAll();}
+      }
+    });
   }
 }
 loadDashboard();

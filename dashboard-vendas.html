@@ -302,7 +302,7 @@ function findColumns(headers) {
     'Mês Criação':'mes', 'Mes Criação':'mes', 'Mes Criacao':'mes', 'Mês Criacao':'mes',
     'Dia Criação':'dia', 'Dia Criacao':'dia', 'Dia Criação':'dia',
     'Acesso':'acesso', 'Funil':'funil',
-    'Detalhe Renovação':'detalheRenov', 'Detalhe Renovacao':'detalheRenov',
+    'Detalhe Renovação':'detalheRenov', 'Detalhe Renovacao':'detalheRenov', 'Detalhe':'detalheRenov',
     'Equipe de Venda':'equipe', 'Link':'link', 'Venda Direta':'vd'
   };
   COL = {};
@@ -414,7 +414,7 @@ function processVendas(rows){
   // FUNIL [funil,vendas,bruto,liquido]
   const fm={};
   all.forEach(r=>{if(!r.funil)return;if(!fm[r.funil])fm[r.funil]={n:r.funil,q:0,b:0,l:0};fm[r.funil].q++;fm[r.funil].b+=r.bruto;fm[r.funil].l+=r.liquido;});
-  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
+  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook','Trafego Pago'];
   const fmKeys=Object.keys(fm);
   const orderedFunil=funilOrd.map(f=>fmKeys.find(k=>norm(k)===f||k===f)).filter(Boolean);
   const unordered=fmKeys.filter(k=>!orderedFunil.includes(k));
@@ -474,10 +474,9 @@ function processVendas(rows){
   });
   Object.keys(VD_TOTALS).forEach(k=>{VD_TOTALS[k].bruto=Math.round(VD_TOTALS[k].bruto);VD_TOTALS[k].liquido=Math.round(VD_TOTALS[k].liquido);});
 
-  // RENOV_MES [ano,mes,qtdRenovada]
+  // RENOV_MES [ano,mes,qtdRenovada] — apenas funil Renovação (coluna Detalhe agora é multi-uso)
   const rnm={};
-  const renovRows=paga.filter(r=>r.detalheRenov&&r.detalheRenov!=='N/A');
-  (renovRows.length>0?renovRows:paga.filter(r=>norm(r.funil)==='Renovacao')).forEach(r=>{
+  paga.filter(r=>norm(r.funil)==='Renovacao').forEach(r=>{
     const k=r.ano+'-'+r.mes;if(!rnm[k])rnm[k]={a:r.ano,m:r.mes,q:0};rnm[k].q++;
   });
   RENOV_MES=Object.values(rnm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q]);
@@ -545,7 +544,7 @@ const C = {
   brand: '#ec2ab5',
   brandSoft: 'rgba(236,42,181,.35)',
   equipe: { '40+Ativa':'#ec2ab5', 'WebFit':'#00d4ff', 'Giva':'#ffb347', 'MasterIA':'#77dd77' },
-  funil: { 'Lancamento':'#ec2ab5', 'Perpetuo (Venda Direta)':'#00d4ff', 'Meteorico':'#ffb347', 'Renovacao':'#77dd77', 'Plataforma':'#ff6b6b', 'Plataforma (compra individual)':'#ff6b6b', 'Facebook':'#9b59b6' },
+  funil: { 'Lancamento':'#ec2ab5', 'Perpetuo (Venda Direta)':'#00d4ff', 'Meteorico':'#ffb347', 'Renovacao':'#77dd77', 'Plataforma':'#ff6b6b', 'Plataforma (compra individual)':'#ff6b6b', 'Facebook':'#9b59b6', 'Trafego Pago':'#9b59b6', 'Trafego Pago - Quiz':'#c39bd3', 'Trafego Pago - Ombro':'#7d3c98' },
   produto: ['#ec2ab5','#00d4ff','#ffb347','#77dd77','#ff6b6b','#9b59b6','#f39c12'],
   status: { 'Ativa':'#77dd77', 'Encerrado':'#ff6b6b', 'Renovar':'#ffb347', 'Vence mes que vem':'#00d4ff' },
   vd: { '1':'#00d4ff', '2':'#ffb347', 'N/A':'#888888' },
@@ -712,7 +711,7 @@ function recomputeAggregates() {
   const filtered = getFilteredRaw();
   const contentFiltered = getContentFilteredRaw();
   const eqOrd=['40+Ativa','WebFit','Giva','MasterIA'];
-  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
+  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook','Trafego Pago'];
 
   // ── Time-series (content-filtered, time applied at render) ──
 
@@ -745,11 +744,10 @@ function recomputeAggregates() {
   });
   VD_MES=Object.values(vdm).sort((a,b)=>a.ym.localeCompare(b.ym)||a.vd.localeCompare(b.vd)).map(v=>[v.ym,v.vd,v.q,Math.round(v.b),Math.round(v.l)]);
 
-  // RENOV_MES [ano,mes,qtdRenovada]
+  // RENOV_MES [ano,mes,qtdRenovada] — apenas funil Renovação (coluna Detalhe agora é multi-uso)
   const pagaCF=contentFiltered.filter(r=>r.status==='Paga');
   const rnm={};
-  const renovRows=pagaCF.filter(r=>r.detalheRenov&&r.detalheRenov!=='N/A');
-  (renovRows.length>0?renovRows:pagaCF.filter(r=>norm(r.funil)==='Renovacao')).forEach(r=>{
+  pagaCF.filter(r=>norm(r.funil)==='Renovacao').forEach(r=>{
     const k=r.ano+'-'+r.mes;if(!rnm[k])rnm[k]={a:r.ano,m:r.mes,q:0};rnm[k].q++;
   });
   RENOV_MES=Object.values(rnm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q]);
@@ -814,14 +812,25 @@ function recomputeAggregates() {
   });
   DAILY=Object.values(dm).sort((a,b)=>a.a-b.a||a.m-b.m||a.d-b.d).map(v=>[v.a,v.m,v.d,v.q,Math.round(v.b),Math.round(v.l)]);
 
-  // DAILY_FUNIL [dateKey, funil, vendas, bruto]
+  // DAILY_FUNIL [dateKey, funil, vendas, bruto] + breakdowns {acessos, detalhes}
+  // Para Tráfego Pago, separa em "Tráfego Pago - Quiz" / "Tráfego Pago - Ombro" (fallback: sem subtipo)
   const dfm={};
   filtered.forEach(r=>{
     if(!r.dia||!r.funil)return;
+    let funilKey=r.funil;
+    if(norm(r.funil)==='Trafego Pago'){
+      const sub=(r.detalheRenov||'').trim();
+      if(sub==='Quiz'||sub==='Ombro') funilKey='Tráfego Pago - '+sub;
+    }
     const dk=String(r.dia).padStart(2,'0')+'/'+String(r.mes).padStart(2,'0');
-    const k=r.ano+'-'+String(r.mes).padStart(2,'0')+'-'+String(r.dia).padStart(2,'0')+'||'+r.funil;
-    if(!dfm[k])dfm[k]={dk,sk:r.ano+'-'+String(r.mes).padStart(2,'0')+'-'+String(r.dia).padStart(2,'0'),f:r.funil,q:0,b:0};
+    const sk=r.ano+'-'+String(r.mes).padStart(2,'0')+'-'+String(r.dia).padStart(2,'0');
+    const k=sk+'||'+funilKey;
+    if(!dfm[k])dfm[k]={dk,sk,f:funilKey,q:0,b:0,acessos:{},detalhes:{}};
     dfm[k].q++;dfm[k].b+=r.bruto;
+    const ac=r.acesso||'—';
+    dfm[k].acessos[ac]=(dfm[k].acessos[ac]||0)+1;
+    const dt=(r.detalheRenov&&r.detalheRenov!=='N/A')?r.detalheRenov:null;
+    if(dt) dfm[k].detalhes[dt]=(dfm[k].detalhes[dt]||0)+1;
   });
   DAILY_FUNIL=Object.values(dfm).sort((a,b)=>a.sk.localeCompare(b.sk)||a.f.localeCompare(b.f));
 }
@@ -945,9 +954,13 @@ function renderChartDailyFunil() {
   d.forEach(r=>{funilTotals[r.f]=(funilTotals[r.f]||0)+r.b;});
   funis.sort((a,b)=>(funilTotals[b]||0)-(funilTotals[a]||0));
 
+  // Index para lookup rápido no tooltip (sk+f → row com breakdowns)
+  const idx={};
+  d.forEach(r=>{idx[r.sk+'||'+r.f]=r;});
+
   const datasets = funis.map((funil,i)=>({
     label:funil,
-    data:days.map(sk=>{const row=d.find(r=>r.sk===sk&&r.f===funil);return row?Math.round(row.b):0;}),
+    data:days.map(sk=>{const row=idx[sk+'||'+funil];return row?Math.round(row.b):0;}),
     backgroundColor:fc(C.funil,funil),
     borderColor:fc(C.funil,funil),
     borderWidth:1,borderRadius:0,
@@ -957,9 +970,47 @@ function renderChartDailyFunil() {
   if(cDailyFunil) cDailyFunil.destroy();
   cDailyFunil = new Chart(document.getElementById('chartDailyFunil'), {
     type:'bar', data:{labels,datasets},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    options:{responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'nearest',intersect:true},
       scales:{y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{grid:{display:false},ticks:{maxTicksLimit:25,font:{size:9}}}},
-      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
+      plugins:{
+        legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}},
+        tooltip:{
+          backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',
+          borderColor:'#333',borderWidth:1,cornerRadius:6,padding:10,
+          displayColors:true,
+          callbacks:{
+            title: items => {
+              if(!items.length) return '';
+              return items[0].dataset.label+' — '+items[0].label;
+            },
+            label: ctx => {
+              const sk = days[ctx.dataIndex];
+              const row = idx[sk+'||'+ctx.dataset.label];
+              if(!row) return fmtK(ctx.raw);
+              const lines = [
+                'Bruto: '+fmt(row.b),
+                'Faturas pagas: '+row.q
+              ];
+              const acOrd=['Anual','Semestral','Trimestral','Mensal'];
+              const acKeys=Object.keys(row.acessos);
+              const orderedAc=acOrd.filter(a=>acKeys.includes(a)).concat(acKeys.filter(a=>!acOrd.includes(a)));
+              if(orderedAc.length){
+                lines.push('');
+                lines.push('Acesso:');
+                orderedAc.forEach(a=>lines.push('  • '+a+': '+row.acessos[a]));
+              }
+              const dtKeys=Object.keys(row.detalhes||{});
+              if(dtKeys.length && !/Trafego Pago - /.test(norm(ctx.dataset.label))){
+                lines.push('');
+                lines.push('Detalhe:');
+                dtKeys.forEach(k=>lines.push('  • '+k+': '+row.detalhes[k]));
+              }
+              return lines;
+            }
+          }
+        }
+      }
     }
   });
 }
@@ -971,7 +1022,7 @@ function renderChartFunilMonthly() {
   const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
   const labels = months.map(m=>{const [a,mo]=m.split('-');return mesLabel(+a,+mo);});
   const funis = [...new Set(d.map(r=>r[0]))];
-  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook'];
+  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook','Trafego Pago'];
   funis.sort((a,b)=>{const ia=funilOrd.indexOf(norm(a)),ib=funilOrd.indexOf(norm(b));return (ia===-1?99:ia)-(ib===-1?99:ib);});
 
   const datasets = funis.map(funil=>({

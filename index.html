@@ -202,18 +202,9 @@ if(sessionStorage.getItem('dash_auth')==='1') {
 <!-- SECTION 2: Faturamento por Funil -->
 <div class="section-title">Faturamento por Funil</div>
 <div class="grid-2">
-  <div class="panel"><div class="panel-title">Faturamento Mensal por Funil (Bruto + Qtd + TM)</div><div class="chart-container chart-md"><canvas id="chartFunilMonthly"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Reembolsos por Mes (com Taxa %)</div><div class="chart-container chart-md"><canvas id="chartReemb"></canvas></div></div>
-</div>
-<div class="grid-2">
   <div class="panel"><div class="panel-title">Performance por Funil</div><table id="tblFunil"></table></div>
   <div class="panel"><div class="panel-title">Distribuicao por Funil</div><div class="chart-container chart-md"><canvas id="chartFunil"></canvas></div></div>
 </div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">VD1 vs VD2 - Venda Direta por Mes</div><div class="chart-container chart-md"><canvas id="chartVDMes"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Faturamento por Funil (mensal - empilhado)</div><div class="chart-container chart-md"><canvas id="chartFunilMes"></canvas></div></div>
-</div>
-
 <!-- SECTION 3: Renovacao -->
 <div class="section-title">Taxa de Renovacao</div>
 <div class="grid-2">
@@ -237,11 +228,11 @@ if(sessionStorage.getItem('dash_auth')==='1') {
 </div>
 <div class="panel" style="margin-bottom:12px">
   <div class="panel-title">Conversao Comercial - WebFit vs Leads</div>
-  <div id="convComercial" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+  <div id="convComercial" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;"></div>
 </div>
 <div class="panel" style="margin-bottom:12px">
   <div class="panel-title">Conversao Lancamento/Meteorico vs Leads Captados</div>
-  <div id="convLancMeteo" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+  <div id="convLancMeteo" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;"></div>
 </div>
 <div class="grid-2">
   <div class="panel"><div class="panel-title">Conversao por Equipe (% do Total)</div><div class="chart-container chart-md"><canvas id="chartConvEquipe"></canvas></div></div>
@@ -501,7 +492,7 @@ function processVendas(rows){
   STATUS_ALUNA=[['Ativa',sa_a],['Encerrado',sa_e],['Renovar',sa_r],['Vence mes que vem',sa_v]];
 
   // CONV_WEBFIT (precompute, leads filled later)
-  CONV_WEBFIT=[1,2,3].map(mes=>{
+  CONV_WEBFIT=[1,2,3,4].map(mes=>{
     const v=paga.filter(r=>r.equipe==='WebFit'&&r.ano===2026&&r.mes===mes).length;
     return [mes,v,0];
   });
@@ -521,13 +512,13 @@ function processLeads(rows){
 
   // Fill CONV_WEBFIT totalLeads
   const lByMo={};
-  LEADS.forEach(l=>{const mo=parseInt(l[0].split('/')[1]);if(mo>=1&&mo<=3){if(!lByMo[mo])lByMo[mo]=0;lByMo[mo]+=l[1];}});
+  LEADS.forEach(l=>{const mo=parseInt(l[0].split('/')[1]);if(mo>=1&&mo<=4){if(!lByMo[mo])lByMo[mo]=0;lByMo[mo]+=l[1];}});
   CONV_WEBFIT=CONV_WEBFIT.map(r=>[r[0],r[1],lByMo[r[0]]||0]);
 
   // LEADS_LANC_METEO [mes,leadsLancMeteo,vendasLancMeteo]
   const llm={};
   data.forEach(r=>{const v=pi(r[7]);if(v>0){const mo=parseInt(ps(r[0]).split('/')[1]);if(mo>=1&&mo<=12){if(!llm[mo])llm[mo]=0;llm[mo]+=v;}}});
-  LEADS_LANC_METEO=[1,2,3].map(mes=>{
+  LEADS_LANC_METEO=[1,2,3,4].map(mes=>{
     const leads=llm[mes]||0;
     const vendas=FUNIL_MES.filter(r=>(norm(r[0])==='Lancamento'||norm(r[0])==='Meteorico')&&r[1]===2026&&r[2]===mes).reduce((s,r)=>s+r[3],0);
     return [mes,leads,vendas];
@@ -663,15 +654,6 @@ function filterFunilMes(data) {
 
 function filterEquipeMes(data) {
   return data.filter(r => matchesTimePeriod(r[1],r[2]));
-}
-
-function getFilteredVDMes() {
-  let d = [...VD_MES];
-  if(filterState.vd!=='all') d = d.filter(r=>r[1]===filterState.vd);
-  return d.filter(r => {
-    const [a,m] = r[0].split('-').map(Number);
-    return matchesTimePeriod(a,m);
-  });
 }
 
 function getFilteredRenov() {
@@ -936,7 +918,6 @@ function renderKPIs() {
     <div class="kpi-card cyan"><div class="label">Faturamento Líquido${filterLabel}</div><div class="value">${fmt(tLiq)}</div><div class="sub">${tBruto>0?fmtP(tLiq/tBruto):'-'} do bruto</div></div>
     <div class="kpi-card red"><div class="label">Reembolsos</div><div class="value">${fmt(tReemb)}</div><div class="sub">${tReembQty} reemb. (${tQty>0?fmtP(tReembQty/(tQty+tReembQty)):'-'})</div></div>
     <div class="kpi-card"><div class="label">Taxa Eduzz</div><div class="value">${fmt(taxaEduzz)}</div><div class="sub">6.0% do bruto</div></div>
-    <div class="kpi-card"><div class="label">Ticket Médio Bruto</div><div class="value">${fmt(tmBruto)}</div><div class="sub">Líq: ${fmt(tQty>0?tLiq/tQty:0)}</div></div>
     <div class="kpi-card"><div class="label">Parceiro / Comissão</div><div class="value">${fmt(Math.max(0,parceiro))}</div><div class="sub">${tBruto>0?fmtP(Math.max(0,parceiro)/tBruto):'-'} do bruto</div></div>
   `;
 }
@@ -1015,94 +996,6 @@ function renderChartDailyFunil() {
   });
 }
 
-// --- Funil Monthly Chart (like Reembolsos: bars per funil + line qty + line TM) ---
-let cFunilMonthly;
-function renderChartFunilMonthly() {
-  const d = filterFunilMes(FUNIL_MES);
-  const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
-  const labels = months.map(m=>{const [a,mo]=m.split('-');return mesLabel(+a,+mo);});
-  const funis = [...new Set(d.map(r=>r[0]))];
-  const funilOrd=['Lancamento','Perpetuo (Venda Direta)','Meteorico','Renovacao','Plataforma','Facebook','Trafego Pago'];
-  funis.sort((a,b)=>{const ia=funilOrd.indexOf(norm(a)),ib=funilOrd.indexOf(norm(b));return (ia===-1?99:ia)-(ib===-1?99:ib);});
-
-  const datasets = funis.map(funil=>({
-    label:funil,
-    data:months.map(m=>{const [a,mo]=m.split('-');const rows=d.filter(r=>r[0]===funil&&r[1]==+a&&r[2]==+mo);return rows.reduce((s,r)=>s+r[4],0);}),
-    backgroundColor:fc(C.funil,funil)+'60',
-    borderColor:fc(C.funil,funil),
-    borderWidth:1,borderRadius:3,yAxisID:'y'
-  }));
-
-  // Linha de quantidade total por mes
-  const qtyData = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[3],0);});
-  datasets.push({label:'Qtd Vendas',data:qtyData,type:'line',borderColor:'#fff',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#fff',borderWidth:2,yAxisID:'y1',order:0});
-
-  // Linha de ticket medio por mes
-  const brutoTotal = months.map(m=>{const [a,mo]=m.split('-');return d.filter(r=>r[1]==+a&&r[2]==+mo).reduce((s,r)=>s+r[4],0);});
-  const tmData = months.map((_,i)=>qtyData[i]>0?Math.round(brutoTotal[i]/qtyData[i]):0);
-  datasets.push({label:'Ticket Medio',data:tmData,type:'line',borderColor:'#ffb347',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#ffb347',borderWidth:2,borderDash:[4,4],yAxisID:'y2',order:0});
-
-  if(cFunilMonthly) cFunilMonthly.destroy();
-  cFunilMonthly = new Chart(document.getElementById('chartFunilMonthly'), {
-    type:'bar', data:{labels,datasets},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{
-        y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},
-        y1:{position:'right',grid:{display:false},ticks:{stepSize:10,color:'#fff'}},
-        y2:{position:'right',grid:{display:false},ticks:{callback:v=>'R$'+v,color:'#ffb347'},display:false},
-        x:{stacked:true,grid:{display:false}}
-      },
-      plugins:{tooltip:{
-        backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
-        callbacks:{label:ctx=>{
-          if(ctx.dataset.label==='Ticket Medio')return 'TM: '+fmt(ctx.raw);
-          if(ctx.dataset.label==='Qtd Vendas')return 'Qtd: '+fmtN(ctx.raw);
-          return ctx.dataset.label+': '+fmtK(ctx.raw);
-        }}
-      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:10,color:'#bbb',font:{size:10}}}}
-    }
-  });
-}
-
-// --- Reembolsos Chart (with % line) ---
-let cReemb;
-function renderChartReemb() {
-  const r = getFilteredReemb();
-  const m = getFilteredMonths();
-  const labels = r.map(d=>mesLabel(d[0],d[1]));
-  // Calculate refund rate per month
-  const taxas = r.map(d => {
-    const month = m.find(x=>x[0]===d[0]&&x[1]===d[1]);
-    const vendas = month ? month[2] : 0;
-    return vendas+d[2]>0 ? (d[2]/(vendas+d[2]))*100 : 0;
-  });
-
-  if(cReemb) cReemb.destroy();
-  cReemb = new Chart(document.getElementById('chartReemb'), {
-    type:'bar', data:{ labels, datasets:[
-      {label:'Valor Reembolsado',data:r.map(d=>d[3]),backgroundColor:'rgba(255,107,107,.4)',borderColor:C.reembolso,borderWidth:1,borderRadius:3,yAxisID:'y'},
-      {label:'Quantidade',data:r.map(d=>d[2]),type:'line',borderColor:'#ffb347',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#ffb347',yAxisID:'y1',borderWidth:2},
-      {label:'Taxa Reemb. (%)',data:taxas,type:'line',borderColor:'#00d4ff',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#00d4ff',yAxisID:'y2',borderWidth:2,borderDash:[4,4]}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      scales:{
-        y:{ticks:{callback:v=>fmtK(v),color:'#999'},grid:{color:'rgba(255,255,255,.04)'}},
-        y1:{position:'right',grid:{display:false},ticks:{stepSize:5,color:'#ffb347'}},
-        y2:{position:'right',grid:{display:false},ticks:{callback:v=>v.toFixed(1)+'%',color:'#00d4ff'},offset:true},
-        x:{grid:{display:false}}
-      },
-      plugins:{tooltip:{
-        backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
-        callbacks:{label:ctx=>{
-          if(ctx.datasetIndex===2) return ctx.dataset.label+': '+ctx.raw.toFixed(1)+'%';
-          if(ctx.datasetIndex===1) return ctx.dataset.label+': '+ctx.raw;
-          return ctx.dataset.label+': '+fmtK(ctx.raw);
-        }}
-      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
-    }
-  });
-}
-
 // --- Funil Table & Chart ---
 let cFunil;
 function renderFunil() {
@@ -1127,52 +1020,6 @@ function renderFunil() {
   cFunil = new Chart(document.getElementById('chartFunil'), {
     type:'doughnut', data:{ labels:fLabels, datasets:[{data:fVals,backgroundColor:fClrs,borderWidth:0}] },
     options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{padding:8,usePointStyle:true,pointStyle:'circle',font:{size:10},color:'#bbb'}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtN(ctx.raw)+' vendas'}}}}
-  });
-}
-
-// --- VD Mes Chart ---
-let cVDMes;
-function renderChartVDMes() {
-  const d = getFilteredVDMes();
-  const months = [...new Set(d.map(r=>r[0]))].sort();
-  const labels = months.map(m=>{ const [a,mo]=m.split('-'); return mesLabel(+a,+mo); });
-  const vd1 = months.map(m=>{ const rows=d.filter(r=>r[0]===m&&r[1]==='1'); return rows.reduce((s,r)=>s+r[3],0); });
-  const vd2 = months.map(m=>{ const rows=d.filter(r=>r[0]===m&&r[1]==='2'); return rows.reduce((s,r)=>s+r[3],0); });
-
-  if(cVDMes) cVDMes.destroy();
-  cVDMes = new Chart(document.getElementById('chartVDMes'), {
-    type:'bar', data:{labels, datasets:[
-      {label:'VD1',data:vd1,backgroundColor:'rgba(0,212,255,.45)',borderColor:C.vd['1'],borderWidth:1,borderRadius:3},
-      {label:'VD2',data:vd2,backgroundColor:'rgba(255,179,71,.45)',borderColor:C.vd['2'],borderWidth:1,borderRadius:3}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false}}},
-      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
-    }
-  });
-}
-
-// --- Funil Mes Chart ---
-let cFunilMes;
-function renderChartFunilMes() {
-  const d = filterFunilMes(FUNIL_MES);
-  const months = [...new Set(d.map(r=>r[1]+'-'+String(r[2]).padStart(2,'0')))].sort();
-  const labels = months.map(m=>{ const [a,mo]=m.split('-'); return mesLabel(+a,+mo); });
-  const funis = [...new Set(d.map(r=>r[0]))].sort();
-  const datasets = funis.map(funil => ({
-    label: funil,
-    data: months.map(m=>{ const [a,mo]=m.split('-'); const row=d.find(r=>r[0]===funil&&r[1]==+a&&r[2]==+mo); return row?row[4]:0; }),
-    backgroundColor: fc(C.funil,funil)+'80',
-    borderColor: fc(C.funil,funil),
-    borderWidth:1, borderRadius:2
-  }));
-  if(cFunilMes) cFunilMes.destroy();
-  cFunilMes = new Chart(document.getElementById('chartFunilMes'), {
-    type:'bar', data:{labels,datasets},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      scales:{y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(255,255,255,.04)'}},x:{stacked:true,grid:{display:false}}},
-      plugins:{tooltip:tooltipStyle,legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
-    }
   });
 }
 
@@ -1463,13 +1310,13 @@ function renderLeads() {
 
 // --- Conversao Comercial WebFit vs Leads ---
 function renderConvComercial() {
-  const meses = ['Jan/26','Fev/26','Mar/26'];
+  const meses = ['Jan/26','Fev/26','Mar/26','Abr/26'];
   // Leads mensais (soma da aba Leads por mês)
-  const leadsMes = [0,0,0];
-  LEADS.forEach(l=>{const m=parseInt(l[0].split('/')[1]);if(m>=1&&m<=3)leadsMes[m-1]+=l[1];});
+  const leadsMes = [0,0,0,0];
+  LEADS.forEach(l=>{const m=parseInt(l[0].split('/')[1]);if(m>=1&&m<=4)leadsMes[m-1]+=l[1];});
   // Vendas dia (do insta)
-  const vDiaMes = [0,0,0];
-  LEADS.forEach(l=>{const m=parseInt(l[0].split('/')[1]);if(m>=1&&m<=3)vDiaMes[m-1]+=l[4];});
+  const vDiaMes = [0,0,0,0];
+  LEADS.forEach(l=>{const m=parseInt(l[0].split('/')[1]);if(m>=1&&m<=4)vDiaMes[m-1]+=l[4];});
 
   let html = '';
   // Conversão Geral (todos os leads vs todas as vendas WebFit)
@@ -1494,7 +1341,7 @@ function renderConvComercial() {
 
 // --- Conversão Lançamento/Meteórico vs Leads Captados ---
 function renderConvLancMeteo() {
-  const meses = ['Jan/26','Fev/26','Mar/26'];
+  const meses = ['Jan/26','Fev/26','Mar/26','Abr/26'];
   const totalLeadsLM = LEADS_LANC_METEO.reduce((s,r)=>s+r[1],0);
   const totalVendasLM = LEADS_LANC_METEO.reduce((s,r)=>s+r[2],0);
   let html = `<div style="text-align:center;padding:12px;background:rgba(236,42,181,.06);border-radius:8px">
@@ -1670,11 +1517,7 @@ function renderAll() {
   // S1: Vendas Diarias
   renderChartDailyFunil();
   // S2: Faturamento por Funil
-  renderChartFunilMonthly();
-  renderChartReemb();
   renderFunil();
-  renderChartVDMes();
-  renderChartFunilMes();
   // S3: Renovacao
   renderStatus();
   renderRenov();

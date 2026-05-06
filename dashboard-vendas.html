@@ -206,13 +206,6 @@ if(sessionStorage.getItem('dash_auth')==='1') {
   <div class="panel"><div class="panel-title">Distribuicao por Funil</div><div class="chart-container chart-md"><canvas id="chartFunil"></canvas></div></div>
 </div>
 
-<!-- SECTION 3: Renovacao -->
-<div class="section-title">Taxa de Renovacao</div>
-<div class="grid-2">
-  <div class="panel"><div class="panel-title">Status das Alunas</div><div class="chart-container chart-sm"><canvas id="chartStatus"></canvas></div></div>
-  <div class="panel"><div class="panel-title">Renovacoes por Mes</div><div class="chart-container chart-md"><canvas id="chartRenov"></canvas></div></div>
-</div>
-
 <!-- SECTION 4: Conversao & Leads -->
 <div class="section-title">Funil de Leads & Conversao</div>
 <div class="panel" style="margin-bottom:12px">
@@ -655,10 +648,6 @@ function filterFunilMes(data) {
 
 function filterEquipeMes(data) {
   return data.filter(r => matchesTimePeriod(r[1],r[2]));
-}
-
-function getFilteredRenov() {
-  return RENOV_MES.filter(r => matchesTimePeriod(r[0],r[1]));
 }
 
 function getFilteredLeads() {
@@ -1166,48 +1155,6 @@ function renderChartEquipeMes() {
   });
 }
 
-// --- Status Doughnut ---
-let cStatus;
-function renderStatus() {
-  const labels = STATUS_ALUNA.map(s=>s[0]);
-  const vals = STATUS_ALUNA.map(s=>s[1]);
-  const colors = labels.map(l=>C.status[l]||'#555');
-  if(cStatus) cStatus.destroy();
-  cStatus = new Chart(document.getElementById('chartStatus'), {
-    type:'doughnut', data:{ labels, datasets:[{data:vals,backgroundColor:colors,borderWidth:0}] },
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{padding:8,usePointStyle:true,pointStyle:'circle',font:{size:10},color:'#bbb'}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtN(ctx.raw)+' alunas'}}}}
-  });
-}
-
-// --- Renovacao Chart ---
-let cRenov;
-function renderRenov() {
-  const d = getFilteredRenov();
-  const totalAtivas = STATUS_ALUNA.find(s=>s[0]==='Ativa')?.[1]||2146;
-  const labels = d.map(r=>mesLabel(r[0],r[1]));
-  const renovQty = d.map(r=>r[2]);
-  const renovPct = d.map(r=>(r[2]/totalAtivas)*100);
-
-  if(cRenov) cRenov.destroy();
-  cRenov = new Chart(document.getElementById('chartRenov'), {
-    type:'bar', data:{labels, datasets:[
-      {label:'Renovacoes',data:renovQty,backgroundColor:'rgba(119,221,119,.45)',borderColor:C.vd['1']||'#77dd77',borderWidth:1,borderRadius:3,yAxisID:'y'},
-      {label:'% da Base Ativa',data:renovPct,type:'line',borderColor:'#ec2ab5',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#ec2ab5',borderWidth:2,yAxisID:'y1'}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      scales:{
-        y:{ticks:{color:'#999'},grid:{color:'rgba(255,255,255,.04)'}},
-        y1:{position:'right',grid:{display:false},ticks:{callback:v=>v.toFixed(1)+'%',color:'#ec2ab5'}},
-        x:{grid:{display:false}}
-      },
-      plugins:{tooltip:{
-        backgroundColor:'#111',titleColor:'#eee',bodyColor:'#ccc',borderColor:'#333',borderWidth:1,cornerRadius:6,padding:8,
-        callbacks:{label:ctx=>ctx.datasetIndex===1?ctx.dataset.label+': '+ctx.raw.toFixed(2)+'%':ctx.dataset.label+': '+ctx.raw}
-      },legend:{labels:{usePointStyle:true,pointStyle:'circle',padding:12,color:'#bbb'}}}
-    }
-  });
-}
-
 // --- Leads Charts ---
 let cLeads, cLeadsV, cLeadsMensal, cLeadsArea;
 function renderLeads() {
@@ -1519,9 +1466,6 @@ function renderAll() {
   renderChartDailyFunil();
   // S2: Faturamento por Funil
   renderFunil();
-  // S3: Renovacao
-  renderStatus();
-  renderRenov();
   // S4: Conversao & Leads
   renderLeads();
   renderConvComparison();

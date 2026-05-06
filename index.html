@@ -1242,16 +1242,16 @@ function renderLeads() {
   const totalLeads = ld.reduce((s,l)=>s+l[1],0);
   const totalOferta = ld.reduce((s,l)=>s+l[2],0);
   const totalPedLink = ld.reduce((s,l)=>s+l[3],0);
-  const totalVDia = ld.reduce((s,l)=>s+l[4],0);
-  const totalVFup = ld.reduce((s,l)=>s+l[5],0);
-  const totalVendas = totalVDia + totalVFup;
+  // Vendas Total: apenas funil Perpetuo (Venda Direta), nos mesmos meses dos leads filtrados
+  const ldMonths = new Set(ld.map(l=>leadsMonth(l[0])));
+  const totalVendas = RAW_PAGA.filter(r=>norm(r.funil)==='Perpetuo (Venda Direta)'&&r.ano===2026&&ldMonths.has(r.mes)).length;
 
   document.getElementById('leadsKpis').innerHTML = `
     <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Total Leads</div><div style="font-size:1.1rem;font-weight:700;color:var(--brand)">${fmtInt(totalLeads)}</div></div>
     <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Na Oferta</div><div style="font-size:1.1rem;font-weight:700;color:var(--cyan)">${fmtInt(totalOferta)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalLeads>0?fmtP(totalOferta/totalLeads):'-'} dos leads</div></div>
-    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Pediram Link</div><div style="font-size:1.1rem;font-weight:700;color:var(--orange)">${fmtInt(totalPedLink)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalOferta>0?fmtP(totalPedLink/totalOferta):'-'} da oferta</div></div>
-    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Vendas Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--green)">${fmtInt(totalVendas)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalPedLink>0?fmtP(totalVendas/totalPedLink):'-'} do link</div></div>
-    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Conversao Geral</div><div style="font-size:1.1rem;font-weight:700">${totalLeads>0?fmtP(totalVendas/totalLeads):'-'}</div><div style="font-size:.65rem;color:var(--text-muted)">lead -> venda</div></div>
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Pediram Link</div><div style="font-size:1.1rem;font-weight:700;color:var(--orange)">${fmtInt(totalPedLink)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalLeads>0?fmtP(totalPedLink/totalLeads):'-'} dos leads</div></div>
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Vendas Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--green)">${fmtInt(totalVendas)}</div><div style="font-size:.65rem;color:var(--text-muted)">${totalLeads>0?fmtP(totalVendas/totalLeads):'-'} dos leads</div></div>
+    <div style="text-align:center;padding:10px"><div style="font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Conversao Geral</div><div style="font-size:1.1rem;font-weight:700">${totalLeads>0?fmtP(totalVendas/totalLeads):'-'}</div><div style="font-size:.65rem;color:var(--text-muted)">lead -> venda (Perpétuo)</div></div>
   `;
 }
 

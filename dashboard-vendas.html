@@ -201,7 +201,7 @@ if(sessionStorage.getItem('dash_auth')==='1') {
 
 <!-- SECTION 2: Faturamento por Funil -->
 <div class="section-title">Faturamento por Funil</div>
-<div class="grid-2">
+<div class="grid-2-1">
   <div class="panel"><div class="panel-title">Performance por Funil</div><table id="tblFunil"></table></div>
   <div class="panel"><div class="panel-title">Distribuicao por Funil</div><div class="chart-container chart-md"><canvas id="chartFunil"></canvas></div></div>
 </div>
@@ -301,7 +301,7 @@ function findColumns(headers) {
 // ============================================================
 // DATA (populated dynamically from Google Sheets)
 // ============================================================
-let MONTHLY=[], REEMB=[], PRODUTO=[], FUNIL=[], EQUIPE=[], LINK=[], EQUIPE_LINK=[];
+let MONTHLY=[], REEMB=[], PRODUTO=[], FUNIL=[], FUNIL_LINK=[], EQUIPE=[], LINK=[], EQUIPE_LINK=[];
 let ACESSO=[], METODO=[], STATUS_ALUNA=[], EQUIPE_MES=[], FUNIL_MES=[];
 let LEADS=[], VD_MES=[], VD_TOTALS={}, RENOV_MES=[], CONV_WEBFIT=[], LEADS_LANC_METEO=[];
 let RAW_ALL=[], RAW_PAGA=[], RAW_REEMB=[], DAILY=[];
@@ -415,6 +415,11 @@ function processVendas(rows){
   const lm={};
   all.forEach(r=>{if(!r.link)return;if(!lm[r.link])lm[r.link]={n:r.link,q:0,b:0,l:0};lm[r.link].q++;lm[r.link].b+=r.bruto;lm[r.link].l+=r.liquido;});
   LINK=Object.values(lm).sort((a,b)=>b.b-a.b).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
+
+  // FUNIL_LINK [funil,link,vendas,bruto,liquido]
+  const flm={};
+  all.forEach(r=>{if(!r.funil||!r.link)return;const k=r.funil+'||'+r.link;if(!flm[k])flm[k]={f:r.funil,l:r.link,q:0,b:0,l2:0};flm[k].q++;flm[k].b+=r.bruto;flm[k].l2+=r.liquido;});
+  FUNIL_LINK=Object.values(flm).sort((a,b)=>b.b-a.b).map(v=>[v.f,v.l,v.q,Math.round(v.b),Math.round(v.l2)]);
 
   // EQUIPE_LINK [equipe,link,vendas,bruto,liquido]
   const elm={};
@@ -749,6 +754,11 @@ function recomputeAggregates() {
   filtered.forEach(r=>{if(!r.link)return;if(!lm[r.link])lm[r.link]={n:r.link,q:0,b:0,l:0};lm[r.link].q++;lm[r.link].b+=r.bruto;lm[r.link].l+=r.liquido;});
   LINK=Object.values(lm).sort((a,b)=>b.b-a.b).map(v=>[v.n,v.q,Math.round(v.b),Math.round(v.l)]);
 
+  // FUNIL_LINK [funil,link,vendas,bruto,liquido]
+  const flm={};
+  filtered.forEach(r=>{if(!r.funil||!r.link)return;const k=r.funil+'||'+r.link;if(!flm[k])flm[k]={f:r.funil,l:r.link,q:0,b:0,l2:0};flm[k].q++;flm[k].b+=r.bruto;flm[k].l2+=r.liquido;});
+  FUNIL_LINK=Object.values(flm).sort((a,b)=>b.b-a.b).map(v=>[v.f,v.l,v.q,Math.round(v.b),Math.round(v.l2)]);
+
   // EQUIPE_LINK
   const elm={};
   filtered.forEach(r=>{if(!r.equipe||!r.link)return;const k=r.equipe+'||'+r.link;if(!elm[k])elm[k]={e:r.equipe,l:r.link,q:0,b:0,l2:0};elm[k].q++;elm[k].b+=r.bruto;elm[k].l2+=r.liquido;});
@@ -1000,8 +1010,14 @@ function renderFunil() {
     vdInfo = `<tr class="total-row"><td colspan="6" style="color:${C.vd[filterState.vd]};font-size:.7rem">Perpetuo VD${filterState.vd}: ${fmtN(vdt.qty)} vendas, ${fmtK(vdt.bruto)} bruto, ${fmtK(vdt.liquido)} liquido</td></tr>`;
   }
 
-  t.innerHTML = `<tr><th>Funil</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">TM</th><th class="num">%</th></tr>` +
-    funilData.map(f=>`<tr><td style="color:${fc(C.funil,f[0])};font-weight:600">${f[0]}</td><td class="num">${fmtN(f[1])}</td><td class="num bold">${fmtK(f[2])}</td><td class="num">${fmtK(f[3])}</td><td class="num">${fmt(f[2]/f[1])}</td><td class="num muted">${fmtP(f[2]/totalB)}</td></tr>`).join('') + vdInfo;
+  t.innerHTML = `<tr><th>Funil / Link</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">TM</th><th class="num">%</th></tr>` +
+    funilData.map(f=>{
+      const color = fc(C.funil,f[0]);
+      const funilRow = `<tr><td style="color:${color};font-weight:600">${f[0]}</td><td class="num">${fmtN(f[1])}</td><td class="num bold">${fmtK(f[2])}</td><td class="num">${fmtK(f[3])}</td><td class="num">${fmt(f[2]/f[1])}</td><td class="num muted">${fmtP(f[2]/totalB)}</td></tr>`;
+      const links = FUNIL_LINK.filter(fl=>fl[0]===f[0]);
+      const linkRows = links.map(fl=>`<tr><td style="padding-left:24px;color:var(--text-dim);font-size:.7rem">↳ ${fl[1]}</td><td class="num muted" style="font-size:.7rem">${fmtN(fl[2])}</td><td class="num" style="font-size:.7rem">${fmtK(fl[3])}</td><td class="num muted" style="font-size:.7rem">${fmtK(fl[4])}</td><td class="num muted" style="font-size:.7rem">${fmt(fl[3]/fl[2])}</td><td class="num muted" style="font-size:.7rem">${fmtP(fl[3]/f[2])}</td></tr>`).join('');
+      return funilRow + linkRows;
+    }).join('') + vdInfo;
 
   const fLabels = funilData.map(f=>f[0]);
   const fVals = funilData.map(f=>f[1]);

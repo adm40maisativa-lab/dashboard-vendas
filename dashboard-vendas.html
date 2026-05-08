@@ -1007,25 +1007,84 @@ function renderFunil() {
   let vdInfo = '';
   if(filterState.vd!=='all') {
     const vdt = VD_TOTALS[filterState.vd];
-    vdInfo = `<tr class="total-row"><td colspan="6" style="color:${C.vd[filterState.vd]};font-size:.7rem">Perpetuo VD${filterState.vd}: ${fmtN(vdt.qty)} vendas, ${fmtK(vdt.bruto)} bruto, ${fmtK(vdt.liquido)} liquido</td></tr>`;
+    vdInfo = `<tr class="total-row"><td colspan="5" style="color:${C.vd[filterState.vd]};font-size:.7rem">Perpetuo VD${filterState.vd}: ${fmtN(vdt.qty)} vendas, ${fmtK(vdt.bruto)} bruto, ${fmtK(vdt.liquido)} liquido</td></tr>`;
   }
 
-  t.innerHTML = `<tr><th>Funil / Link</th><th class="num">Vendas</th><th class="num">Fat. Bruto</th><th class="num">Fat. Liquido</th><th class="num">TM</th><th class="num">%</th></tr>` +
-    funilData.map(f=>{
+  t.innerHTML = `<tr><th>Funil / Link</th><th class="num">Vendas</th><th class="num">%</th><th class="num">Fat. Bruto</th><th class="num">TM</th></tr>` +
+    funilData.map((f,idx)=>{
       const color = fc(C.funil,f[0]);
-      const funilRow = `<tr><td style="color:${color};font-weight:600">${f[0]}</td><td class="num">${fmtN(f[1])}</td><td class="num bold">${fmtK(f[2])}</td><td class="num">${fmtK(f[3])}</td><td class="num">${fmt(f[2]/f[1])}</td><td class="num muted">${fmtP(f[2]/totalB)}</td></tr>`;
       const links = FUNIL_LINK.filter(fl=>fl[0]===f[0]);
-      const linkRows = links.map(fl=>`<tr><td style="padding-left:24px;color:var(--text-dim);font-size:.7rem">↳ ${fl[1]}</td><td class="num muted" style="font-size:.7rem">${fmtN(fl[2])}</td><td class="num" style="font-size:.7rem">${fmtK(fl[3])}</td><td class="num muted" style="font-size:.7rem">${fmtK(fl[4])}</td><td class="num muted" style="font-size:.7rem">${fmt(fl[3]/fl[2])}</td><td class="num muted" style="font-size:.7rem">${fmtP(fl[3]/f[2])}</td></tr>`).join('');
+      const caret = links.length>0 ? `<span class="funil-toggle" data-funil-idx="${idx}" style="cursor:pointer;color:${color};user-select:none;display:inline-block;width:12px;text-align:center;font-size:.65rem;margin-right:4px">▶</span>` : `<span style="display:inline-block;width:12px;margin-right:4px"></span>`;
+      const funilRow = `<tr class="funil-row" data-funil-idx="${idx}" ${links.length>0?'style="cursor:pointer"':''}><td style="color:${color};font-weight:600">${caret}${f[0]}</td><td class="num">${fmtN(f[1])}</td><td class="num muted">${fmtP(f[2]/totalB)}</td><td class="num bold">${fmtK(f[2])}</td><td class="num">${fmt(f[2]/f[1])}</td></tr>`;
+      const linkRows = links.map(fl=>`<tr class="funil-link-row funil-link-${idx}" style="display:none"><td style="padding-left:32px;color:var(--text-dim);font-size:.7rem">↳ ${fl[1]}</td><td class="num muted" style="font-size:.7rem">${fmtN(fl[2])}</td><td class="num muted" style="font-size:.7rem">${fmtP(fl[3]/f[2])}</td><td class="num" style="font-size:.7rem">${fmtK(fl[3])}</td><td class="num muted" style="font-size:.7rem">${fmt(fl[3]/fl[2])}</td></tr>`).join('');
       return funilRow + linkRows;
     }).join('') + vdInfo;
+
+  t.querySelectorAll('.funil-row[data-funil-idx]').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const idx = row.dataset.funilIdx;
+      const rows = t.querySelectorAll('.funil-link-'+idx);
+      if(!rows.length) return;
+      const isHidden = rows[0].style.display === 'none';
+      rows.forEach(r=>r.style.display = isHidden ? '' : 'none');
+      const caret = row.querySelector('.funil-toggle');
+      if(caret) caret.textContent = isHidden ? '▼' : '▶';
+    });
+  });
 
   const fLabels = funilData.map(f=>f[0]);
   const fVals = funilData.map(f=>f[1]);
   const fClrs = fLabels.map(l=>fc(C.funil,l));
+
+  // Outer ring: links per funil (mantem ordem dos funis)
+  const hexToRgba = (hex,a)=>{const h=hex.replace('#','');return `rgba(${parseInt(h.substr(0,2),16)},${parseInt(h.substr(2,2),16)},${parseInt(h.substr(4,2),16)},${a})`;};
+  const linkData=[], linkLabels=[], linkColors=[], linkParents=[];
+  funilData.forEach(f=>{
+    const fcolor = fc(C.funil,f[0]);
+    const links = FUNIL_LINK.filter(fl=>fl[0]===f[0]).sort((a,b)=>b[2]-a[2]);
+    const sumLinkVendas = links.reduce((s,l)=>s+l[2],0);
+    if(links.length === 0){
+      linkData.push(f[1]); linkLabels.push('(sem link)'); linkParents.push(f[0]); linkColors.push(hexToRgba(fcolor,0.4));
+    } else {
+      links.forEach((fl,idx)=>{
+        linkData.push(fl[2]); linkLabels.push(fl[1]); linkParents.push(f[0]);
+        const alpha = links.length === 1 ? 0.85 : (0.95 - (idx/(links.length-1))*0.55);
+        linkColors.push(hexToRgba(fcolor, alpha));
+      });
+      if(sumLinkVendas < f[1]){
+        linkData.push(f[1] - sumLinkVendas); linkLabels.push('(sem link)'); linkParents.push(f[0]); linkColors.push(hexToRgba(fcolor,0.25));
+      }
+    }
+  });
+
   if(cFunil) cFunil.destroy();
   cFunil = new Chart(document.getElementById('chartFunil'), {
-    type:'doughnut', data:{ labels:fLabels, datasets:[{data:fVals,backgroundColor:fClrs,borderWidth:0}] },
-    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{padding:8,usePointStyle:true,pointStyle:'circle',font:{size:10},color:'#bbb'}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+fmtN(ctx.raw)+' vendas'}}}}
+    type:'doughnut',
+    data:{
+      labels:fLabels,
+      datasets:[
+        { data:fVals, backgroundColor:fClrs, borderWidth:0, _ringLabels:fLabels, _ringParents:null },
+        { data:linkData, backgroundColor:linkColors, borderWidth:1, borderColor:'#0a0a0a', _ringLabels:linkLabels, _ringParents:linkParents }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'40%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:ctx=>{
+              const ds = ctx.dataset;
+              const lbl = ds._ringLabels ? ds._ringLabels[ctx.dataIndex] : ctx.label;
+              const parent = ds._ringParents ? ds._ringParents[ctx.dataIndex] : null;
+              const total = ds.data.reduce((s,v)=>s+v,0);
+              const pct = total>0 ? ((ctx.raw/total)*100).toFixed(1)+'%' : '';
+              return (parent ? parent + ' / ' : '') + lbl + ': ' + fmtN(ctx.raw) + ' vendas (' + pct + ')';
+            }
+          }
+        }
+      }
+    }
   });
 }
 

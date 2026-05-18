@@ -287,13 +287,19 @@ function findColumns(headers) {
     'Dia Criação':'dia', 'Dia Criacao':'dia', 'Dia Criação':'dia',
     'Acesso':'acesso', 'Funil':'funil',
     'Detalhe Renovação':'detalheRenov', 'Detalhe Renovacao':'detalheRenov', 'Detalhe':'detalheRenov',
-    'Equipe de Venda':'equipe', 'Link':'link', 'Venda Direta':'vd'
+    'Equipe de Venda':'equipe', 'Link':'link', 'Venda Direta':'vd',
+    'Comissão':'comissao', 'Comissao':'comissao',
+    'Comissão Parceiro':'comissao', 'Comissao Parceiro':'comissao',
+    'Comissão Afiliado':'comissao', 'Comissao Afiliado':'comissao',
+    'Valor Comissão':'comissao', 'Valor Comissao':'comissao'
   };
   COL = {};
   headers.forEach((h, i) => {
     const clean = h.replace(/"/g,'').trim();
     if (map[clean]) COL[map[clean]] = i;
   });
+  // Fallback: coluna AH (índice 33) é a Comissão de Parceiro
+  if (COL.comissao === undefined) COL.comissao = 33;
   console.log('Column mapping:', COL);
 }
 
@@ -372,7 +378,7 @@ function processVendas(rows){
     let ano=pi(r[COL.ano]),mes=pi(r[COL.mes]),dia=pi(r[COL.dia]);
     if(!ano&&r[COL.dataCriacao]){const p=ps(r[COL.dataCriacao]).split('/');if(p.length>=3){dia=parseInt(p[0])||0;mes=parseInt(p[1])||0;ano=parseInt(p[2])||0;}}
     return{status:ps(r[COL.status]),metodo:ps(r[COL.metodo]),bruto:pn(r[COL.valorItem]),reemb:pn(r[COL.valorReemb]),
-    liquido:pn(r[COL.ganhoLiq]),cliente:ps(r[COL.cliente]),produto:ps(r[COL.produto]),
+    liquido:pn(r[COL.ganhoLiq]),comissao:pn(r[COL.comissao]),cliente:ps(r[COL.cliente]),produto:ps(r[COL.produto]),
     ano,mes,dia,acesso:ps(r[COL.acesso]),
     funil:ps(r[COL.funil]),detalheRenov:ps(r[COL.detalheRenov]),equipe:ps(r[COL.equipe]),
     link:ps(r[COL.link]),vd:ps(r[COL.vd])};
@@ -380,10 +386,10 @@ function processVendas(rows){
   const paga=all.filter(r=>r.status==='Paga');
   const reembolsado=all.filter(r=>r.status==='Reembolsado');
 
-  // MONTHLY [ano,mes,vendas,bruto,liquido] - bruto=SUM(Z) ALL rows, liquido=SUM(AI) ALL rows, vendas=COUNT ALL
+  // MONTHLY [ano,mes,vendas,bruto,liquido,comissao] - bruto=SUM(Z), liquido=SUM(AI), comissao=SUM(AG), vendas=COUNT ALL
   const mm={};
-  all.forEach(r=>{const k=r.ano+'-'+r.mes;if(!mm[k])mm[k]={a:r.ano,m:r.mes,q:0,b:0,l:0};mm[k].q++;mm[k].b+=r.bruto;mm[k].l+=r.liquido;});
-  MONTHLY=Object.values(mm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q,Math.round(v.b),Math.round(v.l)]);
+  all.forEach(r=>{const k=r.ano+'-'+r.mes;if(!mm[k])mm[k]={a:r.ano,m:r.mes,q:0,b:0,l:0,c:0};mm[k].q++;mm[k].b+=r.bruto;mm[k].l+=r.liquido;mm[k].c+=r.comissao;});
+  MONTHLY=Object.values(mm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q,Math.round(v.b),Math.round(v.l),Math.round(v.c)]);
 
   // REEMB [ano,mes,qtd,valor]
   const rm={};
@@ -691,10 +697,10 @@ function recomputeAggregates() {
 
   // ── Time-series (content-filtered, time applied at render) ──
 
-  // MONTHLY [ano,mes,vendas,bruto,liquido]
+  // MONTHLY [ano,mes,vendas,bruto,liquido,comissao]
   const mm={};
-  contentFiltered.forEach(r=>{const k=r.ano+'-'+r.mes;if(!mm[k])mm[k]={a:r.ano,m:r.mes,q:0,b:0,l:0};mm[k].q++;mm[k].b+=r.bruto;mm[k].l+=r.liquido;});
-  MONTHLY=Object.values(mm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q,Math.round(v.b),Math.round(v.l)]);
+  contentFiltered.forEach(r=>{const k=r.ano+'-'+r.mes;if(!mm[k])mm[k]={a:r.ano,m:r.mes,q:0,b:0,l:0,c:0};mm[k].q++;mm[k].b+=r.bruto;mm[k].l+=r.liquido;mm[k].c+=r.comissao;});
+  MONTHLY=Object.values(mm).sort((a,b)=>a.a-b.a||a.m-b.m).map(v=>[v.a,v.m,v.q,Math.round(v.b),Math.round(v.l),Math.round(v.c)]);
 
   // REEMB [ano,mes,qtd,valor]
   const reemb=contentFiltered.filter(r=>r.status==='Reembolsado');
@@ -891,6 +897,7 @@ function getKPIData() {
     return {
       tBruto: Math.round(filtered.reduce((s,r)=>s+r.bruto,0)),
       tLiq: Math.round(filtered.reduce((s,r)=>s+r.liquido,0)),
+      tComissao: Math.round(filtered.reduce((s,r)=>s+r.comissao,0)),
       tQty: filtered.length
     };
   }
@@ -898,18 +905,18 @@ function getKPIData() {
   return {
     tBruto: months.reduce((s,m)=>s+m[3],0),
     tLiq: months.reduce((s,m)=>s+m[4],0),
+    tComissao: months.reduce((s,m)=>s+(m[5]||0),0),
     tQty: months.reduce((s,m)=>s+m[2],0)
   };
 }
 
 function renderKPIs() {
-  const {tBruto,tLiq,tQty} = getKPIData();
+  const {tBruto,tLiq,tComissao,tQty} = getKPIData();
   const reembs = getFilteredReemb();
   const tReemb = reembs.reduce((s,m)=>s+m[3],0);
   const tReembQty = reembs.reduce((s,m)=>s+m[2],0);
   const taxaEduzz = tBruto * 0.06;
   const tmBruto = tQty>0? tBruto/tQty : 0;
-  const parceiro = tBruto - tLiq - taxaEduzz - tReemb;
   const filterLabel = filterState.funil!=='all' ? ` <span style="font-size:.55rem;color:${fc(C.funil,filterState.funil)}">(${filterState.funil})</span>` : filterState.vd!=='all' ? ` <span style="font-size:.55rem;color:${C.vd[filterState.vd]||'#888'}">(VD ${filterState.vd})</span>` : '';
 
   document.getElementById('kpiRow').innerHTML = `
@@ -917,7 +924,7 @@ function renderKPIs() {
     <div class="kpi-card cyan"><div class="label">Faturamento Líquido${filterLabel}</div><div class="value">${fmt(tLiq)}</div><div class="sub">${tBruto>0?fmtP(tLiq/tBruto):'-'} do bruto</div></div>
     <div class="kpi-card red"><div class="label">Reembolsos</div><div class="value">${fmt(tReemb)}</div><div class="sub">${tReembQty} reemb. (${tQty>0?fmtP(tReembQty/(tQty+tReembQty)):'-'})</div></div>
     <div class="kpi-card"><div class="label">Taxa Eduzz</div><div class="value">${fmt(taxaEduzz)}</div><div class="sub">6.0% do bruto</div></div>
-    <div class="kpi-card"><div class="label">Parceiro / Comissão</div><div class="value">${fmt(Math.max(0,parceiro))}</div><div class="sub">${tBruto>0?fmtP(Math.max(0,parceiro)/tBruto):'-'} do bruto</div></div>
+    <div class="kpi-card"><div class="label">Parceiro / Comissão</div><div class="value">${fmt(tComissao)}</div><div class="sub">${tBruto>0?fmtP(tComissao/tBruto):'-'} do bruto</div></div>
   `;
 }
 
@@ -1510,23 +1517,22 @@ function renderResumo() {
   let html = `<tr><th>Mês</th><th class="num">Fat. Bruto</th><th class="num">Fat. Líquido</th><th class="num">Vendas</th><th class="num">TM</th><th class="num">TM Líquido</th><th class="num">Reembolsos</th><th class="num">Taxa Reemb.</th><th class="num">Taxa Eduzz</th><th class="num">Parceiro</th></tr>`;
 
   // MONTHLY is already recomputed with funil/vd filters by recomputeAggregates
-  const monthRows = getFilteredMonths().map(m=>[m[0],m[1],m[2],m[3],m[4]]);
+  const monthRows = getFilteredMonths().map(m=>[m[0],m[1],m[2],m[3],m[4],m[5]||0]);
 
-  let sumB=0,sumL=0,sumQ=0,sumR=0,sumRQ=0;
+  let sumB=0,sumL=0,sumQ=0,sumR=0,sumRQ=0,sumC=0;
   monthRows.forEach(m => {
     const r = reembs.find(x=>x[0]===m[0]&&x[1]===m[1]);
     const rVal = r?r[3]:0; const rQty = r?r[2]:0;
     const taxaR = m[2]>0 ? rQty/(m[2]+rQty) : 0;
     const eduzz = m[3]*0.06;
-    const parceiro = m[3]-m[4]-eduzz;
-    sumB+=m[3]; sumL+=m[4]; sumQ+=m[2]; sumR+=rVal; sumRQ+=rQty;
-    html += `<tr><td class="bold">${mesLabel(m[0],m[1])}</td><td class="num">${fmt(m[3])}</td><td class="num cyan-text">${fmt(m[4])}</td><td class="num">${fmtN(m[2])}</td><td class="num bold">${m[2]>0?fmt(m[3]/m[2]):'-'}</td><td class="num">${m[2]>0?fmt(m[4]/m[2]):'-'}</td><td class="num red-text">${rQty}</td><td class="num">${fmtP(taxaR)}</td><td class="num">${fmt(eduzz)}</td><td class="num">${fmt(Math.max(0,parceiro))}</td></tr>`;
+    const parceiro = m[5];
+    sumB+=m[3]; sumL+=m[4]; sumQ+=m[2]; sumR+=rVal; sumRQ+=rQty; sumC+=m[5];
+    html += `<tr><td class="bold">${mesLabel(m[0],m[1])}</td><td class="num">${fmt(m[3])}</td><td class="num cyan-text">${fmt(m[4])}</td><td class="num">${fmtN(m[2])}</td><td class="num bold">${m[2]>0?fmt(m[3]/m[2]):'-'}</td><td class="num">${m[2]>0?fmt(m[4]/m[2]):'-'}</td><td class="num red-text">${rQty}</td><td class="num">${fmtP(taxaR)}</td><td class="num">${fmt(eduzz)}</td><td class="num">${fmt(parceiro)}</td></tr>`;
   });
 
   const taxaRT = sumQ>0 ? sumRQ/(sumQ+sumRQ) : 0;
   const eduzzT = sumB*0.06;
-  const parceiroT = sumB-sumL-eduzzT;
-  html += `<tr class="total-row"><td>TOTAL</td><td class="num brand-text">${fmt(sumB)}</td><td class="num cyan-text">${fmt(sumL)}</td><td class="num">${fmtN(sumQ)}</td><td class="num">${fmt(sumQ>0?sumB/sumQ:0)}</td><td class="num">${fmt(sumQ>0?sumL/sumQ:0)}</td><td class="num red-text">${sumRQ}</td><td class="num">${fmtP(taxaRT)}</td><td class="num">${fmt(eduzzT)}</td><td class="num">${fmt(Math.max(0,parceiroT))}</td></tr>`;
+  html += `<tr class="total-row"><td>TOTAL</td><td class="num brand-text">${fmt(sumB)}</td><td class="num cyan-text">${fmt(sumL)}</td><td class="num">${fmtN(sumQ)}</td><td class="num">${fmt(sumQ>0?sumB/sumQ:0)}</td><td class="num">${fmt(sumQ>0?sumL/sumQ:0)}</td><td class="num red-text">${sumRQ}</td><td class="num">${fmtP(taxaRT)}</td><td class="num">${fmt(eduzzT)}</td><td class="num">${fmt(sumC)}</td></tr>`;
   t.innerHTML = html;
 }
 
